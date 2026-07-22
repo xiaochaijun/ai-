@@ -1,819 +1,444 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>舆情监控 · 筛选面板</title>
-<style>
-  :root {
-    --line:#e3e6ea; --ink:#1f2329; --sub:#8c959e; --accent:#2563eb;
-    --bg:#ffffff; --soft:#f6f7f9; --chip-bg:#eef2ff; --chip-txt:#2563eb;
-    --radio-dot:#2563eb; --cal-hl:#1f2329; --cal-range-bg:#f0f2f5;
-    --cal-today:#ef4444;
-    --sidebar-w:200px; --sidebar-active:#fff1f0; --sidebar-active-txt:#e54d42;
-    --tab-active-bg:#2563eb; --tab-active-color:#fff;
-  }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body {
-    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    color:var(--ink); background:var(--soft); min-height:100vh;
-    line-height:1.55; display:flex;
-  }
+/* ---- 左侧边栏 ---- */
+.sidebar {
+width:var(--sidebar-w); min-width:var(--sidebar-w);
+background:var(--bg); border-right:1px solid var(--line);
+height:100vh; position:sticky; top:0; overflow-y:auto;
+flex-shrink:0; padding:16px 0;
+}
+.sb-group-title {
+font-size:12px; color:var(--sub); font-weight:700;
+padding:10px 18px 6px; letter-spacing:.5px;
+}
+.sb-item {
+display:flex; align-items:center; gap:8px;
+padding:10px 20px; font-size:14px; color:var(--ink);
+cursor:pointer; transition:all .15s; user-select:none;
+border-left:3px solid transparent;
+}
+.sb-item:hover { background:var(--soft); }
+.sb-item.active {
+background:var(--sidebar-active); color:var(--sidebar-active-txt);
+border-left-color:var(--sidebar-active-txt); font-weight:700;
+}
+.sb-icon { font-size:17px; width:22px; text-align:center; flex-shrink:0; }
 
-  /* ---- 左侧边栏 ---- */
-  .sidebar {
-    width:var(--sidebar-w); min-width:var(--sidebar-w);
-    background:var(--bg); border-right:1px solid var(--line);
-    height:100vh; position:sticky; top:0; overflow-y:auto;
-    flex-shrink:0; padding:16px 0;
-  }
-  .sb-group-title {
-    font-size:12px; color:var(--sub); font-weight:700;
-    padding:10px 18px 6px; letter-spacing:.5px;
-  }
-  .sb-item {
-    display:flex; align-items:center; gap:8px;
-    padding:10px 20px; font-size:14px; color:var(--ink);
-    cursor:pointer; transition:all .15s; user-select:none;
-    border-left:3px solid transparent;
-  }
-  .sb-item:hover { background:var(--soft); }
-  .sb-item.active {
-    background:var(--sidebar-active); color:var(--sidebar-active-txt);
-    border-left-color:var(--sidebar-active-txt); font-weight:700;
-  }
-  .sb-icon { font-size:17px; width:22px; text-align:center; flex-shrink:0; }
+/* ---- 右侧主区域 ---- */
+.main { flex:1; min-width:0; }
 
-  /* ---- 右侧主区域 ---- */
-  .main { flex:1; min-width:0; }
-  .wrap { width:100%; max-width:1680px; margin:0 auto; padding:32px 40px 60px; }
+/* ---- 顶部温馨提示 ---- */
+.top-warning {
+text-align:center; font-size:15px; font-weight:700;
+color:#e54d42; padding:14px 20px;
+background:linear-gradient(to bottom,#fff1f0,#fff);
+border-bottom:1px solid #fdd9d5;
+letter-spacing:.8px;
+}
 
-  /* 面板/视频区切换 */
-  .view-panel { display:block; }
-  .view-panel.hidden { display:none; }
+.wrap { width:100%; max-width:1680px; margin:0 auto; padding:32px 40px 60px; }
 
-  /* ---- 视频平台标签页 ---- */
-  .video-section { width:100%; max-width:1680px; margin:0 auto; padding:28px 40px 60px; }
-  .video-header { font-size:20px; font-weight:800; margin-bottom:18px; color:var(--ink); }
-  .platform-tabs {
-    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;
-    border-bottom:2px solid var(--line); padding-bottom:10px;
-  }
-  .ptab {
-    padding:8px 20px; border-radius:8px; font-size:14px; font-weight:600;
-    cursor:pointer; border:1px solid var(--line); background:var(--bg);
-    color:var(--ink); transition:all .15s; user-select:none;
-  }
-  .ptab:hover { border-color:var(--accent); color:var(--accent); }
-  .ptab.active { background:var(--tab-active-bg); color:var(--tab-active-color); border-color:var(--tab-active-bg); }
-  .ptab-iframe-wrap {
-    border:1px solid var(--line); border-radius:12px; overflow:hidden;
-    background:var(--bg);
-  }
-  .ptab-iframe {
-    width:100%; height:calc(100vh - 220px); min-height:600px;
-    border:none; display:block;
-  }
+/* 面板/视频区切换 */
+.view-panel { display:block; }
+.view-panel.hidden { display:none; }
 
-  /* ---- 视频平台：无法内嵌提示 ---- */
-  .video-blocked {
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    height:calc(100vh - 240px); min-height:500px;
-    text-align:center;
-  }
-  .vb-icon { font-size:48px; margin-bottom:16px; }
-  .vb-title { font-size:18px; font-weight:700; color:var(--ink); margin-bottom:8px; }
-  .vb-desc { font-size:14px; color:var(--sub); max-width:400px; line-height:1.6; margin-bottom:24px; }
-  .vb-open-btn {
-    display:inline-block; padding:10px 28px; background:var(--accent); color:#fff;
-    border-radius:8px; text-decoration:none; font-size:14px; font-weight:600;
-    transition:background .2s, transform .1s;
-  }
-  .vb-open-btn:hover { background:#1d4ed8; transform:translateY(-1px); }
+/* ---- 视频平台标签页 ---- */
+.video-section { width:100%; max-width:1680px; margin:0 auto; padding:28px 40px 60px; }
+.video-header { font-size:20px; font-weight:800; margin-bottom:18px; color:var(--ink); }
+.platform-tabs {
+display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;
+border-bottom:2px solid var(--line); padding-bottom:10px;
+}
+.ptab {
+padding:8px 20px; border-radius:8px; font-size:14px; font-weight:600;
+cursor:pointer; border:1px solid var(--line); background:var(--bg);
+color:var(--ink); transition:all .15s; user-select:none;
+}
+.ptab:hover { border-color:var(--accent); color:var(--accent); }
+.ptab.active { background:var(--tab-active-bg); color:var(--tab-active-color); border-color:var(--tab-active-bg); }
+.ptab-iframe-wrap {
+border:1px solid var(--line); border-radius:12px; overflow:hidden;
+background:var(--bg);
+}
+.ptab-iframe {
+width:100%; height:calc(100vh - 220px); min-height:600px;
+border:none; display:block;
+}
 
-  /* ---- 大屏适配 ---- */
-  @media (min-width:1920px){
-    :root { --sidebar-w:240px; }
-    .wrap, .video-section { max-width:1880px; padding-left:56px; padding-right:56px; }
-    .sb-item { font-size:15px; padding:12px 24px; }
-    .sb-group-title { font-size:13px; padding:12px 24px 6px; }
-    .panel { padding:34px 40px 40px; }
-    .lbl, .filter-label { font-size:14px; }
-    select, .text-input, .chip-input, .radio-item span { font-size:15px; }
-  }
-  @media (min-width:2560px){
-    .wrap, .video-section { max-width:2280px; }
-  }
+/* ---- 视频平台：无法内嵌提示 ---- */
+.video-blocked {
+display:flex; flex-direction:column; align-items:center; justify-content:center;
+height:calc(100vh - 240px); min-height:500px;
+text-align:center;
+}
+.vb-icon { font-size:48px; margin-bottom:16px; }
+.vb-title { font-size:18px; font-weight:700; color:var(--ink); margin-bottom:8px; }
+.vb-desc { font-size:14px; color:var(--sub); max-width:400px; line-height:1.6; margin-bottom:24px; }
+.vb-open-btn {
+display:inline-block; padding:10px 28px; background:var(--accent); color:#fff;
+border-radius:8px; text-decoration:none; font-size:14px; font-weight:600;
+transition:background .2s, transform .1s;
+}
+.vb-open-btn:hover { background:#1d4ed8; transform:translateY(-1px); }
 
-  /* ---- 面板容器 ---- */
-  .panel {
-    background:var(--bg); border:1px solid var(--line); border-radius:14px;
-    padding:28px 30px 34px;
-  }
+/* ---- 大屏适配 ---- */
+@media (min-width:1920px){
+:root { --sidebar-w:240px; }
+.wrap, .video-section { max-width:1880px; padding-left:56px; padding-right:56px; }
+.sb-item { font-size:15px; padding:12px 24px; }
+.sb-group-title { font-size:13px; padding:12px 24px 6px; }
+.panel { padding:34px 40px 40px; }
+.lbl, .filter-label { font-size:14px; }
+select, .text-input, .chip-input, .radio-item span { font-size:15px; }
+}
+@media (min-width:2560px){
+.wrap, .video-section { max-width:2280px; }
+}
 
-  /* ---- 行 ---- */
-  .row { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; margin-bottom:22px; }
-  .row:last-child { margin-bottom:0; }
+/* ---- 面板容器 ---- */
+.panel {
+background:var(--bg); border:1px solid var(--line); border-radius:14px;
+padding:28px 30px 34px;
+}
 
-  /* ---- 标签 ---- */
-  .lbl {
-    font-size:13px; color:var(--ink); font-weight:600; white-space:nowrap;
-    flex:0 0 auto; padding-top:8px; letter-spacing:.2px;
-  }
+/* ---- 行 ---- */
+.row { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; margin-bottom:22px; }
+.row:last-child { margin-bottom:0; }
 
-  /* ---- 时区下拉 ---- */
-  .select-wrap { position:relative; flex:0 0 auto; }
-  select {
-    appearance:none; -webkit-appearance:none;
-    border:1px solid var(--line); border-radius:8px; padding:8px 32px 8px 12px;
-    font-size:14px; color:var(--ink); background:var(--bg);
-    cursor:pointer; outline:none; transition:border-color .15s;
-  }
-  select:hover { border-color:#b0b7bf; }
-  select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
-  .select-wrap::after {
-    content:""; position:absolute; right:11px; top:50%; transform:translateY(-35%);
-    width:0; height:0; border-left:4.5px solid transparent;
-    border-right:4.5px solid transparent; border-top:5px solid var(--sub);
-    pointer-events:none;
-  }
+/* ---- 标签 ---- */
+.lbl {
+font-size:13px; color:var(--ink); font-weight:600; white-space:nowrap;
+flex:0 0 auto; padding-top:8px; letter-spacing:.2px;
+}
 
-  /* ---- 关键词标签区 ---- */
-  .chip-area {
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    border:1px solid var(--line); border-radius:8px; padding:7px 10px;
-    min-height:40px; background:var(--bg); flex:1;
-  }
-  .chip {
-    display:inline-flex; align-items:center; gap:5px;
-    background:var(--chip-bg); color:var(--chip-txt); font-size:13px;
-    padding:4px 10px; border-radius:6px; font-weight:500;
-  }
-  .chip .x {
-    cursor:pointer; font-size:15px; line-height:1; opacity:.65;
-    transition:opacity .15s;
-  }
-  .chip .x:hover { opacity:1; }
-  .chip-input {
-    border:none; outline:none; font-size:14px; color:var(--ink);
-    background:transparent; flex:1; min-width:120px; padding:2px 0;
-  }
-  .chip-input::placeholder { color:var(--sub); }
+/* ---- 时区下拉 ---- */
+.select-wrap { position:relative; flex:0 0 auto; }
+select {
+appearance:none; -webkit-appearance:none;
+border:1px solid var(--line); border-radius:8px; padding:8px 32px 8px 12px;
+font-size:14px; color:var(--ink); background:var(--bg);
+cursor:pointer; outline:none; transition:border-color .15s;
+}
+select:hover { border-color:#b0b7bf; }
+select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+.select-wrap::after {
+content:""; position:absolute; right:11px; top:50%; transform:translateY(-35%);
+width:0; height:0; border-left:4.5px solid transparent;
+border-right:4.5px solid transparent; border-top:5px solid var(--sub);
+pointer-events:none;
+}
 
-  /* ---- 过滤词输入 ---- */
-  .filter-area {
-    flex:1; display:flex; align-items:center; gap:10px;
-  }
-  .filter-label {
-    font-size:13px; color:var(--ink); font-weight:600; white-space:nowrap; letter-spacing:.2px;
-  }
-  .text-input {
-    flex:1; border:1px solid var(--line); border-radius:8px;
-    padding:8px 12px; font-size:14px; color:var(--ink); outline:none;
-    transition:border-color .15s;
-  }
-  .text-input:hover { border-color:#b0b7bf; }
-  .text-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
-  .text-input::placeholder { color:var(--sub); font-size:13px; }
+/* ---- 关键词标签区 ---- */
+.chip-area {
+display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+border:1px solid var(--line); border-radius:8px; padding:7px 10px;
+min-height:40px; background:var(--bg); flex:1;
+}
+.chip {
+display:inline-flex; align-items:center; gap:5px;
+background:var(--chip-bg); color:var(--chip-txt); font-size:13px;
+padding:4px 10px; border-radius:6px; font-weight:500;
+}
+.chip .x {
+cursor:pointer; font-size:15px; line-height:1; opacity:.65;
+transition:opacity .15s;
+}
+.chip .x:hover { opacity:1; }
+.chip-input {
+border:none; outline:none; font-size:14px; color:var(--ink);
+background:transparent; flex:1; min-width:120px; padding:2px 0;
+}
+.chip-input::placeholder { color:var(--sub); }
 
-  /* ---- 渠道单选 ---- */
-  .channel-group { display:flex; align-items:center; gap:18px; flex-wrap:wrap; flex:1; }
-  .radio-item { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
-  .radio-item input[type="radio"] {
-    appearance:none; -webkit-appearance:none; width:16px; height:16px;
-    border:1.5px solid #c4c9d0; border-radius:50%; cursor:pointer;
-    position:relative; flex-shrink:0; transition:border-color .15s;
-  }
-  .radio-item input[type="radio"]:checked { border-color:var(--radio-dot); }
-  .radio-item input[type="radio"]:checked::after {
-    content:""; position:absolute; top:50%; left:50%;
-    transform:translate(-50%,-50%); width:8px; height:8px;
-    background:var(--radio-dot); border-radius:50%;
-  }
-  .radio-item span { font-size:14px; color:var(--ink); }
+/* ---- 过滤词输入 ---- */
+.filter-area {
+flex:1; display:flex; align-items:center; gap:10px;
+}
+.filter-label {
+font-size:13px; color:var(--ink); font-weight:600; white-space:nowrap; letter-spacing:.2px;
+}
+.text-input {
+flex:1; border:1px solid var(--line); border-radius:8px;
+padding:8px 12px; font-size:14px; color:var(--ink); outline:none;
+transition:border-color .15s;
+}
+.text-input:hover { border-color:#b0b7bf; }
+.text-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+.text-input::placeholder { color:var(--sub); font-size:13px; }
 
-  /* ---- 日期范围选择器 ---- */
-  .date-row { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; }
-  .date-picker {
-    display:inline-flex; align-items:center; gap:8px;
-    border:1px solid var(--line); border-radius:8px; padding:7px 12px;
-    background:var(--bg); cursor:pointer; user-select:none;
-    transition:border-color .15s;
-  }
-  .date-picker:hover { border-color:#b0b7bf; }
-  .date-text { font-size:14px; color:var(--ink); white-space:nowrap; }
-  .date-icon { width:17px; height:17px; opacity:.45; }
+/* ---- 渠道单选 ---- */
+.channel-group { display:flex; align-items:center; gap:18px; flex-wrap:wrap; flex:1; }
+.radio-item { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+.radio-item input[type="radio"] {
+appearance:none; -webkit-appearance:none; width:16px; height:16px;
+border:1.5px solid #c4c9d0; border-radius:50%; cursor:pointer;
+position:relative; flex-shrink:0; transition:border-color .15s;
+}
+.radio-item input[type="radio"]:checked { border-color:var(--radio-dot); }
+.radio-item input[type="radio"]:checked::after {
+content:""; position:absolute; top:50%; left:50%;
+transform:translate(-50%,-50%); width:8px; height:8px;
+background:var(--radio-dot); border-radius:50%;
+}
+.radio-item span { font-size:14px; color:var(--ink); }
 
-  /* 日历弹层 */
-  .cal-pop {
-    display:none; position:absolute; z-index:200;
-    background:var(--bg); border:1px solid var(--line); border-radius:14px;
-    box-shadow:0 8px 28px rgba(15,23,42,.12),0 2px 8px rgba(15,23,42,.06);
-    padding:18px 20px 16px; margin-top:8px;
-  }
-  .cal-pop.show { display:block; animation:popIn .18s ease-out; }
-  @keyframes popIn { from{opacity:0;transform:scale(.96) translateY(-6px);} to{opacity:1;transform:scale(1) translateY(0);} }
+/* ---- 日期范围选择器 ---- */
+.date-row { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; }
+.date-picker {
+display:inline-flex; align-items:center; gap:8px;
+border:1px solid var(--line); border-radius:8px; padding:7px 12px;
+background:var(--bg); cursor:pointer; user-select:none;
+transition:border-color .15s;
+}
+.date-picker:hover { border-color:#b0b7bf; }
+.date-text { font-size:14px; color:var(--ink); white-space:nowrap; }
+.date-icon { width:17px; height:17px; opacity:.45; }
 
-  .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .cal-arrows { display:flex; align-items:center; gap:10px; }
-  .cal-arrow { width:26px; height:26px; border-radius:6px; border:1px solid var(--line);
-                background:var(--bg); cursor:pointer; display:flex;align-items:center;justify-content:center;
-                transition:background .15s; }
-  .cal-arrow:hover { background:var(--soft); }
-  .cal-arrow svg { width:13px; height:13px; stroke:var(--sub); fill:none; stroke-width:2; }
-  .cal-month-sel {
-    appearance:none; -webkit-appearance:none;
-    border:1px solid var(--line); border-radius:6px; padding:4px 28px 4px 10px;
-    font-size:13px; font-weight:600; color:var(--ink); background:var(--bg);
-    cursor:pointer; outline:none;
-  }
-  .cal-year-sel {
-    appearance:none; -webkit-appearance:none;
-    border:1px solid var(--line); border-radius:6px; padding:4px 28px 4px 10px;
-    font-size:13px; font-weight:600; color:var(--ink); background:var(--bg);
-    cursor:pointer; outline:none; margin-left:6px;
-  }
-  .cal-month-sel::after, .cal-year-sel::after {
-    content:""; position:absolute; right:9px; top:50%; transform:translateY(-50%);
-    width:0; height:0; border-left:4px solid transparent;
-    border-right:4px solid transparent; border-top:4.5px solid var(--sub);
-  }
+/* 日历弹层 */
+.cal-pop {
+display:none; position:absolute; z-index:200;
+background:var(--bg); border:1px solid var(--line); border-radius:14px;
+box-shadow:0 8px 28px rgba(15,23,42,.12),0 2px 8px rgba(15,23,42,.06);
+padding:18px 20px 16px; margin-top:8px;
+}
+.cal-pop.show { display:block; animation:popIn .18s ease-out; }
+@keyframes popIn { from{opacity:0;transform:scale(.96) translateY(-6px);} to{opacity:1;transform:scale(1) translateY(0);} }
 
-  .cal-body { display:flex; gap:36px; }
-  .cal-grid { width:220px; }
-  .cal-title { font-size:13px; font-weight:600; color:var(--ink); text-align:center; margin-bottom:10px; }
-  .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; color:var(--sub); margin-bottom:6px; }
-  .cal-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
-  .cal-day {
-    aspect-ratio:1; display:flex; align-items:center; justify-content:center;
-    font-size:13px; color:var(--ink); border-radius:8px; cursor:pointer;
-    transition:background .12s; position:relative;
-  }
-  .cal-day:hover { background:var(--soft); }
-  .cal-day.other { color:#c4c9d0; }
-  .cal-day.in-range { background:var(--cal-range-bg); }
-  .cal-day.range-start, .cal-day.range-end { background:var(--cal-hl); color:#fff; font-weight:600; }
-  .cal-day.today::after {
-    content:""; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
-    width:4px; height:4px; border-radius:50%; background:var(--cal-today);
-  }
-  .cal-day.selected:not(.range-start):not(.range-end) { background:var(--cal-range-bg); font-weight:600; }
+.cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.cal-arrows { display:flex; align-items:center; gap:10px; }
+.cal-arrow { width:26px; height:26px; border-radius:6px; border:1px solid var(--line);
+background:var(--bg); cursor:pointer; display:flex;align-items:center;justify-content:center;
+transition:background .15s; }
+.cal-arrow:hover { background:var(--soft); }
+.cal-arrow svg { width:13px; height:13px; stroke:var(--sub); fill:none; stroke-width:2; }
+.cal-month-sel {
+appearance:none; -webkit-appearance:none;
+border:1px solid var(--line); border-radius:6px; padding:4px 28px 4px 10px;
+font-size:13px; font-weight:600; color:var(--ink); background:var(--bg);
+cursor:pointer; outline:none;
+}
+.cal-year-sel {
+appearance:none; -webkit-appearance:none;
+border:1px solid var(--line); border-radius:6px; padding:4px 28px 4px 10px;
+font-size:13px; font-weight:600; color:var(--ink); background:var(--bg);
+cursor:pointer; outline:none; margin-left:6px;
+}
+.cal-month-sel::after, .cal-year-sel::after {
+content:""; position:absolute; right:9px; top:50%; transform:translateY(-50%);
+width:0; height:0; border-left:4px solid transparent;
+border-right:4px solid transparent; border-top:4.5px solid var(--sub);
+}
 
-  /* ---- 底部操作栏 ---- */
-  .action-bar {
-    display:flex; align-items:center; justify-content:flex-end; gap:12px;
-    margin-top:24px; padding-top:18px; border-top:1px solid var(--line);
-  }
-  .btn {
-    padding:9px 22px; border-radius:8px; font-size:14px; font-weight:600;
-    cursor:pointer; border:1px solid transparent; transition:all .15s;
-  }
-  .btn-primary { background:var(--accent); color:#fff; }
-  .btn-primary:hover { background:#1d4ed8; }
-  .btn-secondary { background:var(--bg); color:var(--ink); border-color:var(--line); }
-  .btn-secondary:hover { background:var(--soft); }
+.cal-body { display:flex; gap:36px; }
+.cal-grid { width:220px; }
+.cal-title { font-size:13px; font-weight:600; color:var(--ink); text-align:center; margin-bottom:10px; }
+.cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; color:var(--sub); margin-bottom:6px; }
+.cal-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-day {
+aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+font-size:13px; color:var(--ink); border-radius:8px; cursor:pointer;
+transition:background .12s; position:relative;
+}
+.cal-day:hover { background:var(--soft); }
+.cal-day.other { color:#c4c9d0; }
+.cal-day.in-range { background:var(--cal-range-bg); }
+.cal-day.range-start, .cal-day.range-end { background:var(--cal-hl); color:#fff; font-weight:600; }
+.cal-day.today::after {
+content:""; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+width:4px; height:4px; border-radius:50%; background:var(--cal-today);
+}
+.cal-day.selected:not(.range-start):not(.range-end) { background:var(--cal-range-bg); font-weight:600; }
 
-  /* ---- 搜索提示词结果区 ---- */
-  .result-box { margin-top:22px; display:flex; flex-direction:column; gap:14px; }
-  .result-title { font-size:13px; color:var(--sub); font-weight:600; }
-  .prompt-card { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg); }
-  .pc-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--soft); }
-  .pc-ch { font-size:14px; font-weight:700; color:var(--ink); }
-  .pc-copy { border:1px solid var(--accent); color:var(--accent); background:var(--bg); border-radius:6px; padding:4px 12px; font-size:12px; cursor:pointer; font-weight:600; transition:all .15s; }
-  .pc-copy:hover { background:var(--accent); color:#fff; }
-  .pc-body { margin:0; padding:14px; font-size:13px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-break:break-all; font-family:inherit; }
-  .pc-link { display:block; padding:9px 14px; font-size:13px; color:var(--accent); text-decoration:none; border-top:1px solid var(--line); box-sizing:border-box; }
-  .pc-link:hover { background:var(--soft); }
-  .pc-actions { display:flex; gap:10px; padding:10px 14px; border-top:1px solid var(--line); background:var(--soft); }
-  .pc-actions .pc-link { flex:1; text-align:center; border:1px solid var(--line); border-radius:6px; background:var(--bg); }
-  .pc-link.subtle { color:var(--sub); }
-  .rep-frame { width:100%; height:780px; border:1px solid var(--line); border-radius:10px; margin-top:0; background:#fff; }
+/* ---- 底部操作栏 ---- */
+.action-bar {
+display:flex; align-items:center; justify-content:flex-end; gap:12px;
+margin-top:24px; padding-top:18px; border-top:1px solid var(--line);
+}
+.btn {
+padding:9px 22px; border-radius:8px; font-size:14px; font-weight:600;
+cursor:pointer; border:1px solid transparent; transition:all .15s;
+}
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#1d4ed8; }
+.btn-secondary { background:var(--bg); color:var(--ink); border-color:var(--line); }
+.btn-secondary:hover { background:var(--soft); }
 
-  /* ---- 平台内嵌 ---- */
-  .platform-card { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--bg); margin-bottom:20px; }
-  .pc-link-open {
-    font-size:12px; color:var(--sub); text-decoration:none; padding:5px 10px;
-    border:1px solid var(--line); border-radius:6px; transition:all .15s; white-space:nowrap;
-  }
-  .pc-link-open:hover { color:var(--accent); border-color:var(--accent); background:#f0f4ff; }
-  .platform-hint {
-    text-align:center; font-size:12px; color:var(--accent); font-weight:600;
-    padding:8px 0 6px; letter-spacing:.3px;
-  }
-  .platform-note {
-    text-align:center; font-size:12px; color:#b45309; font-weight:600;
-    padding:14px 0; margin-top:6px; background:#fffbeb;
-    border-top:1px solid var(--line); letter-spacing:.3px;
-  }
-  .platform-frame {
-    width:100%; height:720px; border:none; display:block;
-    border-top:1px solid var(--line);
-  }
+/* ---- 搜索提示词结果区 ---- /
+.result-box { margin-top:22px; display:flex; flex-direction:column; gap:14px; }
+.result-title { font-size:13px; color:var(--sub); font-weight:600; }
+.result-cards-row {
+display:flex; gap:20px; align-items:stretch;
+}
+.result-cards-row > .platform-card {
+flex:1; min-width:0; margin-bottom:0;
+}
+/ 单卡片时恢复纵向 */
+.result-box.single-card .platform-card { width:100%; }
+.prompt-card { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg); }
+.pc-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--soft); }
+.pc-ch { font-size:14px; font-weight:700; color:var(--ink); }
+.pc-copy { border:1px solid var(--accent); color:var(--accent); background:var(--bg); border-radius:6px; padding:4px 12px; font-size:12px; cursor:pointer; font-weight:600; transition:all .15s; }
+.pc-copy:hover { background:var(--accent); color:#fff; }
+.pc-body { margin:0; padding:14px; font-size:13px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-break:break-all; font-family:inherit; }
+.pc-link { display:block; padding:9px 14px; font-size:13px; color:var(--accent); text-decoration:none; border-top:1px solid var(--line); box-sizing:border-box; }
+.pc-link:hover { background:var(--soft); }
+.pc-actions { display:flex; gap:10px; padding:10px 14px; border-top:1px solid var(--line); background:var(--soft); }
+.pc-actions .pc-link { flex:1; text-align:center; border:1px solid var(--line); border-radius:6px; background:var(--bg); }
+.pc-link.subtle { color:var(--sub); }
+.rep-frame { width:100%; height:780px; border:1px solid var(--line); border-radius:10px; margin-top:0; background:#fff; }
 
-</style>
-</head>
-<body>
+/* ---- 平台内嵌 ---- */
+.platform-card { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--bg); margin-bottom:20px; }
+.pc-link-open {
+font-size:12px; color:var(--sub); text-decoration:none; padding:5px 10px;
+border:1px solid var(--line); border-radius:6px; transition:all .15s; white-space:nowrap;
+}
+.pc-link-open:hover { color:var(--accent); border-color:var(--accent); background:#f0f4ff; }
+.platform-hint {
+text-align:center; font-size:12px; color:var(--accent); font-weight:600;
+padding:8px 0 6px; letter-spacing:.3px;
+}
+.platform-note {
+text-align:center; font-size:12px; color:#b45309; font-weight:600;
+padding:14px 0; margin-top:6px; background:#fffbeb;
+border-top:1px solid var(--line); letter-spacing:.3px;
+}
+.platform-frame {
+width:100%; height:720px; border:none; display:block;
+border-top:1px solid var(--line);
+}
 
-<!-- 左侧边栏 -->
-<div class="sidebar">
-  <div class="sb-group-title">舆情监控</div>
-  <div class="sb-item active" id="sbAI" onclick="switchView('ai')">
-    <span class="sb-icon">🤖</span><span>舆情 AI</span>
+<!-- 第1行：时间 + 时间选择标签(自定义时显示) -->
+<div class="row">
+  <span class="lbl">时间</span>
+  <div class="select-wrap">
+    <select id="tz" onchange="onTimeChange()">
+      <option value="7d" selected>近7日</option>
+      <option value="3d">近3日</option>
+      <option value="15d">近15日</option>
+      <option value="30d">近30日</option>
+      <option value="custom">自定义</option>
+    </select>
   </div>
-  <div class="sb-item" id="sbVideo" onclick="switchView('video')">
-    <span class="sb-icon">🎬</span><span>视频平台</span>
+
+  <!-- 时间选择标签：仅"自定义"时显示，位于关键词前 -->
+  <div style="position:relative; display:none;" id="dateWrap">
+    <div class="date-picker" id="dateBtn" onclick="toggleCal()">
+      <svg class="date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span class="date-text" id="dateText">2026-07-15 — 2026-07-21</span>
+    </div>
+
+    <!-- 日历弹层 -->
+    <div class="cal-pop" id="calPop">
+      <div class="cal-header">
+        <div style="display:flex;align-items:center;gap:8px;position:relative;">
+          <select class="cal-month-sel" id="m1"><option selected>7月</option></select>
+          <select class="cal-year-sel" id="y1"><option selected>2026</option></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;position:relative;">
+          <select class="cal-month-sel" id="m2"><option selected>8月</option></select>
+          <select class="cal-year-sel" id="y2"><option selected>2026</option></select>
+        </div>
+        <div class="cal-arrows">
+          <button class="cal-arrow" onclick="shiftCal(-1)" title="上一月">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="cal-arrow" onclick="shiftCal(1)" title="下一月">
+            <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cal-body" id="calBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 第2行：关键词配置 -->
+<div class="row">
+  <span class="lbl">关键词配置</span>
+  <div class="chip-area">
+    <span class="chip">pudgin<span class="x" onclick="this.parentElement.remove()">×</span></span>
+    <input class="chip-input" type="text" placeholder="回车添加关键词..." id="kwInput">
   </div>
 </div>
 
-<!-- 右侧主区域 -->
-<div class="main">
-
-  <!-- ====== 视图：舆情AI（筛选面板） ====== -->
-  <div class="view-panel" id="viewAI">
-  <div class="wrap">
-
-  <div class="panel">
-
-    <!-- 第1行：时间 + 时间选择标签(自定义时显示) -->
-    <div class="row">
-      <span class="lbl">时间</span>
-      <div class="select-wrap">
-        <select id="tz" onchange="onTimeChange()">
-          <option value="7d" selected>近7日</option>
-          <option value="3d">近3日</option>
-          <option value="15d">近15日</option>
-          <option value="30d">近30日</option>
-          <option value="custom">自定义</option>
-        </select>
-      </div>
-
-      <!-- 时间选择标签：仅"自定义"时显示，位于关键词前 -->
-      <div style="position:relative; display:none;" id="dateWrap">
-        <div class="date-picker" id="dateBtn" onclick="toggleCal()">
-          <svg class="date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <span class="date-text" id="dateText">2026-07-15 — 2026-07-21</span>
-        </div>
-
-        <!-- 日历弹层 -->
-        <div class="cal-pop" id="calPop">
-          <div class="cal-header">
-            <div style="display:flex;align-items:center;gap:8px;position:relative;">
-              <select class="cal-month-sel" id="m1"><option selected>7月</option></select>
-              <select class="cal-year-sel" id="y1"><option selected>2026</option></select>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;position:relative;">
-              <select class="cal-month-sel" id="m2"><option selected>8月</option></select>
-              <select class="cal-year-sel" id="y2"><option selected>2026</option></select>
-            </div>
-            <div class="cal-arrows">
-              <button class="cal-arrow" onclick="shiftCal(-1)" title="上一月">
-                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
-              <button class="cal-arrow" onclick="shiftCal(1)" title="下一月">
-                <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="cal-body" id="calBody"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- 第2行：关键词配置 -->
-    <div class="row">
-      <span class="lbl">关键词配置</span>
-      <div class="chip-area">
-        <span class="chip">pudgin<span class="x" onclick="this.parentElement.remove()">×</span></span>
-        <input class="chip-input" type="text" placeholder="回车添加关键词..." id="kwInput">
-      </div>
-    </div>
-
-    <!-- 第3行：监测类型（类似时间的下拉筛选） -->
-    <div class="row">
-      <span class="lbl">监测类型</span>
-      <div class="select-wrap">
-        <select id="dim">
-          <option value="opinion" selected>游戏舆情和玩家核心讨论</option>
-          <option value="update">游戏近期内容更新</option>
-          <option value="both">舆情+内容更新</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 第4行：过滤词配置 -->
-    <div class="row">
-      <span class="lbl">过滤词配置</span>
-      <input class="text-input" type="text" placeholder="请输入要过滤的词，按Enter键创建一组，可不填" id="filterInput" style="flex:1;">
-    </div>
-
-    <!-- 第5行：渠道 -->
-    <div class="row">
-      <span class="lbl">渠道</span>
-      <div class="channel-group">
-        <label class="radio-item"><input type="radio" name="ch" value="all" checked><span>全部渠道</span></label>
-        <label class="radio-item"><input type="radio" name="ch" value="yuanbao"><span>元宝</span></label>
-        <label class="radio-item"><input type="radio" name="ch" value="doubao"><span>豆包</span></label>
-        <label class="radio-item"><input type="radio" name="ch" value="qianwen"><span>千问</span></label>
-      </div>
-    </div>
-
-    <!-- 操作按钮 -->
-    <div class="action-bar">
-      <button class="btn btn-secondary" onclick="resetForm()">重置</button>
-      <button class="btn btn-primary" onclick="submitQuery()">开始查询</button>
-    </div>
-
-    <!-- 搜索提示词结果区 -->
-    <div class="result-box" id="resultBox" style="display:none;"></div>
-
-  </div><!-- /.panel -->
-  </div><!-- /.wrap -->
-  </div><!-- /#viewAI -->
-
-  <!-- ====== 视图：视频平台 ====== -->
-  <div class="view-panel hidden" id="viewVideo">
-    <div class="video-section">
-      <div class="video-header">视频平台</div>
-      <div class="platform-tabs" id="videoTabs">
-        <div class="ptab active" data-platform="douyin" onclick="switchVideoTab(this,'douyin')">抖音</div>
-        <div class="ptab" data-platform="kuaishou" onclick="switchVideoTab(this,'kuaishou')">快手</div>
-        <div class="ptab" data-platform="bilibili" onclick="switchVideoTab(this,'bilibili')">B站</div>
-      </div>
-      <div class="ptab-iframe-wrap">
-        <iframe class="ptab-iframe" id="videoFrame" src="" title="视频平台" style="display:none;" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"></iframe>
-        <div class="video-blocked" id="videoBlocked">
-          <div class="vb-icon">🔒</div>
-          <div class="vb-title">该平台禁止内嵌</div>
-          <div class="vb-desc">由于安全策略限制，<span id="vbPlatformName">抖音</span> 无法在页面中直接展示。</div>
-          <a class="vb-open-btn" id="vbOpenLink" href="https://www.douyin.com/jingxuan" target="_blank" rel="noopener">在新标签打开 ↗</a>
-        </div>
-      </div>
-    </div>
+<!-- 第3行：监测类型（类似时间的下拉筛选） -->
+<div class="row">
+  <span class="lbl">监测类型</span>
+  <div class="select-wrap">
+    <select id="dim">
+      <option value="opinion" selected>游戏舆情和玩家核心讨论</option>
+      <option value="update">游戏近期内容更新</option>
+      <option value="both">舆情+内容更新</option>
+    </select>
   </div>
+</div>
 
-</div><!-- /.main -->
+<!-- 第4行：过滤词配置 -->
+<div class="row">
+  <span class="lbl">过滤词配置</span>
+  <input class="text-input" type="text" placeholder="请输入要过滤的词，按Enter键创建一组，可不填" id="filterInput" style="flex:1;">
+</div>
 
-<script>
-// ====== 视图切换（侧边栏） ======
-function switchView(view){
-  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.view-panel').forEach(el=>el.classList.add('hidden'));
-  if(view==='ai'){
-    document.getElementById('sbAI').classList.add('active');
-    document.getElementById('viewAI').classList.remove('hidden');
-  } else {
-    document.getElementById('sbVideo').classList.add('active');
-    document.getElementById('viewVideo').classList.remove('hidden');
-  }
-}
-
-// ====== 视频平台标签切换 ======
-const VIDEO_PLATFORMS = {
-  douyin:   { name:'抖音', url:'https://www.douyin.com/jingxuan' },
-  kuaishou: { name:'快手', url:'https://www.kuaishou.com/?isHome=1' },
-  bilibili: { name:'B站', url:'https://www.bilibili.com/' }
-};
-
-function switchVideoTab(tabEl, platform){
-  // 切换标签高亮
-  document.querySelectorAll('#videoTabs .ptab').forEach(el=>el.classList.remove('active'));
-  tabEl.classList.add('active');
-
-  const frame = document.getElementById('videoFrame');
-  const blocked = document.getElementById('videoBlocked');
-  const info = VIDEO_PLATFORMS[platform];
-
-  if(platform === 'douyin'){
-    // 抖音禁止 iframe 内嵌 → 显示提示
-    frame.style.display = 'none';
-    blocked.style.display = 'flex';
-    document.getElementById('vbPlatformName').textContent = info.name;
-    document.getElementById('vbOpenLink').href = info.url;
-  } else {
-    // 其他平台 → 正常内嵌
-    blocked.style.display = 'none';
-    frame.style.display = 'block';
-    frame.src = info.url;
-    frame.title = info.name;
-  }
-}
-
-// ====== 日历数据与状态 ======
-const TODAY = new Date(2026,6,22); // 模拟今天 2026-07-22
-let selStart = new Date(2026,6,15);
-let selEnd   = new Date(2026,6,21);
-let calMonth = 6; // July = 6 (0-based)
-let calYear  = 2026;
-
-const WEEKDAYS = ['一','二','三','四','五','六','日'];
-
-function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
-function firstWeekday(y,m){
-  let d = new Date(y,m,1).getDay();
-  return d === 0 ? 6 : d-1; // 周一=0 ... 周日=6
-}
-
-function renderCal(){
-  const body = document.getElementById('calBody');
-  let html = '';
-  for(let offset=0; offset<2; offset++){
-    let m = ((calMonth + offset)%12 + 12)%12;
-    let y = calYear + Math.floor((calMonth + offset)/12);
-    if(m<0){ m+=12; y-=1; }
-    html += buildMonthGrid(y,m,offset);
-  }
-  body.innerHTML = html;
-}
-
-function buildMonthGrid(y,m,idx){
-  const names=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
-  const dim = daysInMonth(y,m);
-  const fw = firstWeekday(y,m);
-  const prevDim = m===0 ? daysInMonth(y-1,11) : daysInMonth(y,m-1);
-
-  let cells = '';
-  // 上月尾部
-  for(let i=fw-1;i>=0;i--){
-    cells += `<div class="cal-day other">${prevDim-i}</div>`;
-  }
-  // 本月
-  for(let d=1;d<=dim;d++){
-    let cls='cal-day';
-    const dt = new Date(y,m,d);
-    if(dt.toDateString()===TODAY.toDateString()) cls+=' today';
-    if((selStart && dt>=selStart && dt<=selEnd)){
-      if(dt.toDateString()===selStart.toDateString()) cls+=' range-start';
-      else if(selEnd && dt.toDateString()===selEnd.toDateString()) cls+=' range-end';
-      else cls+=' in-range';
-    }
-    cells += `<div class="${cls}" onclick="pickDate(${y},${m},${d})">${d}</div>`;
-  }
-  // 下月头部
-  const total = fw + dim;
-  const remain = total <= 35 ? 35-total : 42-total;
-  for(let i=1;i<=remain;i++) cells += `<div class="cal-day other">${i}</div>`;
-
-  return `<div class="cal-grid">
-    <div class="cal-title">${names[m]}</div>
-    <div class="cal-weekdays">${WEEKDAYS.map(w=>`<div>${w}</div>`).join('')}</div>
-    <div class="cal-days">${cells}</div>
-  </div>`;
-}
-
-function pickDate(y,m,d){
-  const picked = new Date(y,m,d);
-  if(!selStart || (selStart && selEnd)){
-    selStart = picked;
-    selEnd = null;
-  } else {
-    if(picked<selStart){ selEnd=selStart; selStart=picked; }
-    else selEnd = picked;
-  }
-  updateDateText();
-  renderCal();
-}
-
-function updateDateText(){
-  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  document.getElementById('dateText').textContent =
-    fmt(selStart)+(selEnd?' — '+fmt(selEnd):'');
-}
-
-function toggleCal(){
-  const p=document.getElementById('calPop');
-  p.classList.toggle('show');
-  if(p.classList.contains('show')) renderCal();
-}
-document.addEventListener('click', e=>{
-  const pop=document.getElementById('calPop'), btn=document.getElementById('dateBtn');
-  if(!pop.contains(e.target)&&!btn.contains(e.target)) pop.classList.remove('show');
-});
-
-function shiftCal(dir){
-  calMonth+=dir;
-  if(calMonth>11){ calMonth-=12; calYear++; }
-  if(calMonth<0){ calMonth+=12; calYear--; }
-  renderCal();
-}
-
-// ====== 关键词回车添加 ======
-document.getElementById('kwInput').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const v=e.target.value.trim();
-    if(!v) return;
-    const area=e.target.closest('.chip-area');
-    const chip=document.createElement('span');
-    chip.className='chip';
-    chip.innerHTML=`${v}<span class="x">×</span>`;
-    chip.querySelector('.x').onclick=function(){this.parentElement.remove();};
-    area.insertBefore(chip,e.target);
-    e.target.value='';
-  }
-});
-
-// ====== 过滤词回车 ======
-document.getElementById('filterInput').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){} // 占位：可扩展为多组过滤词
-});
-
-// ====== 时间下拉：选"自定义"才显示时间选择标签 ======
-function onTimeChange(){
-  const v=document.getElementById('tz').value;
-  const wrap=document.getElementById('dateWrap');
-  if(v==='custom'){
-    wrap.style.display='block';
-  } else {
-    wrap.style.display='none';
-    document.getElementById('calPop').classList.remove('show');
-  }
-}
-
-// ====== 按钮 ======
-function resetForm(){
-  document.getElementById('tz').value='7d';
-  document.getElementById('dim').value='opinion';
-  document.getElementById('dateWrap').style.display='none';
-  document.getElementById('calPop').classList.remove('show');
-  document.querySelectorAll('.chip-area .chip').forEach(el=>el.remove());
-  document.getElementById('kwInput').value='';
-  document.getElementById('filterInput').value='';
-  document.querySelector('input[name="ch"][value="all"]').checked=true;
-  selStart=new Date(2026,6,15); selEnd=new Date(2026,6,21);
-  updateDateText();
-  renderCal();
-}
-
-// ====== 渠道与监测类型配置 ======
-const CHANNELS = {
-  yuanbao: { name:'元宝', url:'https://yuanbao.tencent.com/chat/naQivTmsDa' },
-  doubao:  { name:'豆包', url:'https://www.doubao.com/chat/' },
-  qianwen: { name:'千问', url:'https://www.qianwen.com/' }
-};
-const DIM_INFO = {
-  opinion: { label:'游戏舆情和玩家核心讨论', desc:'用户在周期内对游戏看法和讨论内容，以正、中、负进行小结并分析' },
-  update:  { label:'游戏近期内容更新',       desc:'产品在周期内更新的内容和活动，并展示给我' },
-  both:    { label:'舆情+内容更新',          desc:'用户在周期内对游戏看法和讨论内容，以正、中、负舆情讨论还有产品在周期内更新的内容和活动' }
-};
-
-function getRange(){
-  const tz=document.getElementById('tz').value;
-  let s,e;
-  if(tz==='custom'){ s=selStart; e=selEnd; }
-  else {
-    const n={'7d':7,'3d':3,'15d':15,'30d':30}[tz]||7;
-    e=TODAY; s=new Date(TODAY); s.setDate(TODAY.getDate()-(n-1));
-  }
-  const fmt=d=>`${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,'0')}月${String(d.getDate()).padStart(2,'0')}日`;
-  return { start:s, end:e, text:`${fmt(s)}到${fmt(e)}` };
-}
-
-function buildPrompt(channelName, rangeText, keyword, dim){
-  const info=DIM_INFO[dim];
-  return `你好${channelName}，请帮我搜索${rangeText}期间，${keyword}内容的${info.label}，需要客观公正真实的内容，内容选取抖音、快手、B站、各个游戏APP论坛，然后生成分析报告，内容需要简单易懂且剔除无关内容。`;
-}
-
-function escapeHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function copyText(btn){
-  const txt=btn.parentElement.nextElementSibling.textContent;
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(txt).then(()=>{
-      const o=btn.textContent; btn.textContent='已复制'; setTimeout(()=>btn.textContent=o,1200);
-    }).catch(()=>alert(txt));
-  } else { alert(txt); }
-}
-
-// ====== 可交互 HTML 报告生成 ======
-function repItems(kind, keyword, rangeText, channelName){
-  const map={
-    pos:[
-      ['玩家盛赞本次版本优化，称手感明显提升','在'+rangeText+'期间，'+channelName+'上大量玩家对'+keyword+'的本次更新表示认可，认为操作手感与稳定性有明显改善（示例内容）。'],
-      ['社区二创热度走高，攻略贴获高赞','围绕'+keyword+'的讨论催生大量二创与攻略内容，相关帖子互动量领先（示例内容）。']
-    ],
-    neu:[
-      ['版本内容讨论平稳，信息向内容居多','周期内关于'+keyword+'的讨论以资讯、攻略类中性内容为主，情绪无明显波动（示例内容）。'],
-      ['玩家关注活动节奏，观望情绪明显','部分玩家对'+keyword+'后续活动安排持观望态度，等待官方进一步消息（示例内容）。']
-    ],
-    neg:[
-      ['外挂与匹配问题引发集中吐槽','周期内'+channelName+'上出现针对'+keyword+'外挂治理与匹配机制的负面反馈，需重点关注（示例内容）。'],
-      ['部分付费点引发争议','少数玩家对'+keyword+'的付费设计表达不满，建议在后续版本优化（示例内容）。']
-    ],
-    up:[
-      ['新赛季上线，新增核心玩法','在'+rangeText+'，'+keyword+'推出新赛季，包含全新地图与玩法模式（示例更新内容）。'],
-      ['限时联动活动开启','与知名 IP 的联动活动于周期内上线，引发社区广泛关注（示例更新内容）。']
-    ]
-  };
-  const cls={pos:'pos',neu:'neu',neg:'neg',up:'up'};
-  const tag={pos:'正面',neu:'中性',neg:'负面',up:'更新'};
-  return map[kind].map(it=>`<div class="rep-item" onclick="repToggle(this)"><div class="it-head"><span class="it-title">${it[0]}</span><span class="badge b-${cls[kind]}">${tag[kind]}</span></div><div class="it-body">${it[1]}</div></div>`).join('');
-}
-
-function buildReport(p){
-  const sections = p.dim==='opinion' ? ['pos','neu','neg'] : p.dim==='update' ? ['up'] : ['pos','neu','neg','up'];
-  const tabName={pos:'正面',neu:'中性',neg:'负面',up:'内容更新'};
-  let tabsHtml='', panelsHtml='';
-  sections.forEach((s,i)=>{
-    tabsHtml+=`<button class="rep-tab ${i===0?'on':''}" onclick="repTab(this,'p_${s}')">${tabName[s]}</button>`;
-    panelsHtml+=`<div class="rep-panel ${i===0?'on':''}" id="p_${s}">${repItems(s,p.keyword,p.rangeText,p.channelName)}</div>`;
-  });
-  const total=1280, posP=42, neuP=35, negP=23;
-  const gen=new Date().toLocaleString('zh-CN');
-  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${p.keyword} 舆情分析报告 · ${p.channelName}</title><style>
-  :root{--accent:#2563eb;--pos:#16a34a;--neu:#6b7280;--neg:#dc2626;--line:#e5e7eb;--soft:#f8fafc;}
-  *{box-sizing:border-box;}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;margin:0;padding:24px;color:#1f2937;background:#fff;}
-  .rep-h{font-size:20px;font-weight:800;margin:0 0 4px;}
-  .rep-sub{font-size:13px;color:#6b7280;margin-bottom:18px;}
-  .rep-overview{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
-  .ov-card{flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--soft);}
-  .ov-num{font-size:22px;font-weight:800;}
-  .ov-lab{font-size:12px;color:#6b7280;margin-top:2px;}
-  .rep-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:8px;}
-  .rep-tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600;color:#374151;}
-  .rep-tab.on{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .rep-panel{display:none;}
-  .rep-panel.on{display:block;}
-  .rep-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
-  .rep-item .it-head{display:flex;justify-content:space-between;align-items:center;gap:10px;}
-  .rep-item .it-title{font-weight:700;font-size:14px;}
-  .badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:700;color:#fff;}
-  .b-pos{background:var(--pos);} .b-neu{background:var(--neu);} .b-neg{background:var(--neg);} .b-up{background:var(--accent);}
-  .rep-item .it-body{font-size:13px;color:#374151;line-height:1.7;margin-top:8px;display:none;}
-  .rep-item.open .it-body{display:block;}
-  .rep-foot{font-size:12px;color:#9ca3af;margin-top:18px;border-top:1px solid var(--line);padding-top:10px;}
-  </style></head><body>
-  <h1 class="rep-h">${p.keyword} 舆情分析报告</h1>
-  <div class="rep-sub">监测类型：${p.dimLabel} ｜ 时间：${p.rangeText} ｜ 渠道：${p.channelName} ｜ 生成时间：${gen}</div>
-  <div class="rep-overview">
-    <div class="ov-card"><div class="ov-num">${total}</div><div class="ov-lab">相关讨论/内容总量</div></div>
-    <div class="ov-card"><div class="ov-num" style="color:var(--pos)">${posP}%</div><div class="ov-lab">正面</div></div>
-    <div class="ov-card"><div class="ov-num" style="color:var(--neu)">${neuP}%</div><div class="ov-lab">中性</div></div>
-    <div class="ov-card"><div class="ov-num" style="color:var(--neg)">${negP}%</div><div class="ov-lab">负面</div></div>
+<!-- 第5行：渠道 -->
+<div class="row">
+  <span class="lbl">渠道</span>
+  <div class="channel-group">
+    <label class="radio-item"><input type="radio" name="ch" value="all" checked><span>全部渠道</span></label>
+    <label class="radio-item"><input type="radio" name="ch" value="yuanbao"><span>元宝</span></label>
+    <label class="radio-item"><input type="radio" name="ch" value="doubao"><span>豆包</span></label>
+    <label class="radio-item"><input type="radio" name="ch" value="qianwen"><span>千问</span></label>
   </div>
-  <div class="rep-tabs">${tabsHtml}</div>
-  ${panelsHtml}
-  <div class="rep-foot">本报告由 ${p.channelName} 生成并转发（数据来源：抖音 / 快手 / B站 / 各游戏 APP 论坛）。示例数据 —— 接入渠道 API 后返回真实检索结果。</div>
-  <script>function repTab(btn,id){document.querySelectorAll('.rep-tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.rep-panel').forEach(p=>p.classList.remove('on'));document.getElementById(id).classList.add('on');}function repToggle(el){el.classList.toggle('open');}<\/script>
-  </body></html>`;
-}
+</div>
 
+<!-- 操作按钮 -->
+<div class="action-bar">
+  <button class="btn btn-secondary" onclick="resetForm()">重置</button>
+  <button class="btn btn-primary" onclick="submitQuery()">开始查询</button>
+</div>
+
+<!-- 搜索提示词结果区 -->
+<div class="result-box" id="resultBox" style="display:none;"></div>
 // ====== 轻量模式：打开网页 + 回填链接（不介入、不调后端） ======
 
 function submitQuery(){
-  const chips=[...document.querySelectorAll('.chip-area .chip')].map(e=>e.firstChild.textContent.trim());
-  const kwInput=document.getElementById('kwInput').value.trim();
-  const allKw=[...chips, kwInput].filter(Boolean);
-  if(allKw.length===0){ alert('请先输入关键词（在关键词配置处回车添加，或直接输入）'); return; }
-  const keyword=allKw.join('、');
+const chips=[...document.querySelectorAll('.chip-area .chip')].map(e=>e.firstChild.textContent.trim());
+const kwInput=document.getElementById('kwInput').value.trim();
+const allKw=[...chips, kwInput].filter(Boolean);
+if(allKw.length===0){ alert('请先输入关键词（在关键词配置处回车添加，或直接输入）'); return; }
+const keyword=allKw.join('、');
 
-  const dim=document.getElementById('dim').value;
-  const range=getRange();
-  const ch=document.querySelector('input[name="ch"]:checked').value;
-  const targets = ch==='all' ? Object.keys(CHANNELS) : [ch];
+const dim=document.getElementById('dim').value;
+const range=getRange();
+const ch=document.querySelector('input[name="ch"]:checked').value;
+const targets = ch==='all' ? Object.keys(CHANNELS) : [ch];
 
-  // 复制首个提示词到剪贴板
-  const firstPrompt=buildPrompt(CHANNELS[targets[0]].name, range.text, keyword, dim);
-  if(navigator.clipboard){ navigator.clipboard.writeText(firstPrompt).catch(()=>{}); }
+// 复制首个提示词到剪贴板
+const firstPrompt=buildPrompt(CHANNELS[targets[0]].name, range.text, keyword, dim);
+if(navigator.clipboard){ navigator.clipboard.writeText(firstPrompt).catch(()=>{}); }
 
-  let cards='';
-  targets.forEach(key=>{
-    const c=CHANNELS[key];
-    const prompt=buildPrompt(c.name, range.text, keyword, dim);
-    const head=`<div class="pc-head">
-        <span class="pc-ch">${c.name}</span>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <a class="pc-link-open" href="${c.url}" target="_blank" rel="noopener">在新标签打开 ↗</a>
-          <button class="pc-copy" onclick="copyText(this)">复制提示词</button>
-        </div>
-      </div>
-      <pre class="pc-body">${escapeHtml(prompt)}</pre>`;
-    if(key==='qianwen'){
-      // 千问：不内嵌，仅提示词 + 快捷打开标签 + 暂时无法跳转提示
-      cards+=`<div class="platform-card" id="card_${key}">
-        ${head}
-        <div class="platform-note">⚠ 暂时无法跳转</div>
-      </div>`;
-    } else {
-      // 其他渠道：内嵌平台界面
-      cards+=`<div class="platform-card" id="card_${key}">
-        ${head}
-        <div class="platform-hint">↓ 在下方 ${c.name} 界面中粘贴提示词并发送搜索 ↓</div>
-        <iframe class="platform-frame" src="${c.url}" title="${c.name} 搜索平台" allow="clipboard-read; clipboard-write" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"></iframe>
-      </div>`;
-    }
-  });
+let cards='';
+targets.forEach(key=>{
+const c=CHANNELS[key];
+const prompt=buildPrompt(c.name, range.text, keyword, dim);
+const head=<div class="pc-head"> <span class="pc-ch">${c.name}</span> <div style="display:flex;gap:8px;align-items:center;"> <a class="pc-link-open" href="${c.url}" target="_blank" rel="noopener">在新标签打开 ↗</a> <button class="pc-copy" onclick="copyText(this)">复制提示词</button> </div> </div> <pre class="pc-body">${escapeHtml(prompt)}</pre>;
+if(key==='qianwen'){
+// 千问：不内嵌，仅提示词 + 快捷打开标签 + 暂时无法跳转提示
+cards+=<div class="platform-card" id="card_${key}"> ${head} <div class="platform-note">⚠ 暂时无法跳转</div> </div>;
+} else {
+// 其他渠道：内嵌平台界面
+cards+=<div class="platform-card" id="card_${key}"> ${head} <div class="platform-hint">↓ 在下方 ${c.name} 界面中粘贴提示词并发送搜索 ↓</div> <iframe class="platform-frame" src="${c.url}" title="${c.name} 搜索平台" allow="clipboard-read; clipboard-write" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"></iframe> </div>;
+}
+});
 
-  const box=document.getElementById('resultBox');
-  box.innerHTML=`<div class="result-title">已为 ${targets.length} 个渠道生成提示词并准备搜索入口（提示词已复制到剪贴板，可粘贴到对应平台发送）；标注「暂时无法跳转」的渠道请点上方「在新标签打开」。</div>${cards}`;
-  box.style.display='block';
-  box.scrollIntoView({behavior:'smooth'});
+const box=document.getElementById('resultBox');
+// 多卡片时左右并排（元宝左 豆包右），单卡片纵向
+const isMulti = targets.length > 1;
+const wrapper = isMulti ? <div class="result-cards-row">${cards}</div> : cards;
+box.className = 'result-box' + (isMulti ? '' : ' single-card');
+box.innerHTML=<div class="result-title">已为 ${targets.length} 个渠道生成提示词并准备搜索入口（提示词已复制到剪贴板，可粘贴到对应平台发送）；标注「暂时无法跳转」的渠道请点上方「在新标签打开」。</div>${wrapper};
+box.style.display='block';
+box.scrollIntoView({behavior:'smooth'});
 }
 
 // 初始渲染
 renderCal();
-</script>
-</body>
-</html>
