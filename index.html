@@ -10,14 +10,100 @@
     --bg:#ffffff; --soft:#f6f7f9; --chip-bg:#eef2ff; --chip-txt:#2563eb;
     --radio-dot:#2563eb; --cal-hl:#1f2329; --cal-range-bg:#f0f2f5;
     --cal-today:#ef4444;
+    --sidebar-w:200px; --sidebar-active:#fff1f0; --sidebar-active-txt:#e54d42;
+    --tab-active-bg:#2563eb; --tab-active-color:#fff;
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   body {
     font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
     color:var(--ink); background:var(--soft); min-height:100vh;
-    line-height:1.55;
+    line-height:1.55; display:flex;
   }
-  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 60px; }
+
+  /* ---- 左侧边栏 ---- */
+  .sidebar {
+    width:var(--sidebar-w); min-width:var(--sidebar-w);
+    background:var(--bg); border-right:1px solid var(--line);
+    height:100vh; position:sticky; top:0; overflow-y:auto;
+    flex-shrink:0; padding:16px 0;
+  }
+  .sb-group-title {
+    font-size:12px; color:var(--sub); font-weight:700;
+    padding:10px 18px 6px; letter-spacing:.5px;
+  }
+  .sb-item {
+    display:flex; align-items:center; gap:8px;
+    padding:10px 20px; font-size:14px; color:var(--ink);
+    cursor:pointer; transition:all .15s; user-select:none;
+    border-left:3px solid transparent;
+  }
+  .sb-item:hover { background:var(--soft); }
+  .sb-item.active {
+    background:var(--sidebar-active); color:var(--sidebar-active-txt);
+    border-left-color:var(--sidebar-active-txt); font-weight:700;
+  }
+  .sb-icon { font-size:17px; width:22px; text-align:center; flex-shrink:0; }
+
+  /* ---- 右侧主区域 ---- */
+  .main { flex:1; min-width:0; }
+  .wrap { width:100%; max-width:1680px; margin:0 auto; padding:32px 40px 60px; }
+
+  /* 面板/视频区切换 */
+  .view-panel { display:block; }
+  .view-panel.hidden { display:none; }
+
+  /* ---- 视频平台标签页 ---- */
+  .video-section { width:100%; max-width:1680px; margin:0 auto; padding:28px 40px 60px; }
+  .video-header { font-size:20px; font-weight:800; margin-bottom:18px; color:var(--ink); }
+  .platform-tabs {
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;
+    border-bottom:2px solid var(--line); padding-bottom:10px;
+  }
+  .ptab {
+    padding:8px 20px; border-radius:8px; font-size:14px; font-weight:600;
+    cursor:pointer; border:1px solid var(--line); background:var(--bg);
+    color:var(--ink); transition:all .15s; user-select:none;
+  }
+  .ptab:hover { border-color:var(--accent); color:var(--accent); }
+  .ptab.active { background:var(--tab-active-bg); color:var(--tab-active-color); border-color:var(--tab-active-bg); }
+  .ptab-iframe-wrap {
+    border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    background:var(--bg);
+  }
+  .ptab-iframe {
+    width:100%; height:calc(100vh - 220px); min-height:600px;
+    border:none; display:block;
+  }
+
+  /* ---- 视频平台：无法内嵌提示 ---- */
+  .video-blocked {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:calc(100vh - 240px); min-height:500px;
+    text-align:center;
+  }
+  .vb-icon { font-size:48px; margin-bottom:16px; }
+  .vb-title { font-size:18px; font-weight:700; color:var(--ink); margin-bottom:8px; }
+  .vb-desc { font-size:14px; color:var(--sub); max-width:400px; line-height:1.6; margin-bottom:24px; }
+  .vb-open-btn {
+    display:inline-block; padding:10px 28px; background:var(--accent); color:#fff;
+    border-radius:8px; text-decoration:none; font-size:14px; font-weight:600;
+    transition:background .2s, transform .1s;
+  }
+  .vb-open-btn:hover { background:#1d4ed8; transform:translateY(-1px); }
+
+  /* ---- 大屏适配 ---- */
+  @media (min-width:1920px){
+    :root { --sidebar-w:240px; }
+    .wrap, .video-section { max-width:1880px; padding-left:56px; padding-right:56px; }
+    .sb-item { font-size:15px; padding:12px 24px; }
+    .sb-group-title { font-size:13px; padding:12px 24px 6px; }
+    .panel { padding:34px 40px 40px; }
+    .lbl, .filter-label { font-size:14px; }
+    select, .text-input, .chip-input, .radio-item span { font-size:15px; }
+  }
+  @media (min-width:2560px){
+    .wrap, .video-section { max-width:2280px; }
+  }
 
   /* ---- 面板容器 ---- */
   .panel {
@@ -201,11 +287,50 @@
   .pc-actions { display:flex; gap:10px; padding:10px 14px; border-top:1px solid var(--line); background:var(--soft); }
   .pc-actions .pc-link { flex:1; text-align:center; border:1px solid var(--line); border-radius:6px; background:var(--bg); }
   .pc-link.subtle { color:var(--sub); }
-  .rep-frame { width:100%; height:780px; border:1px solid var(--line); border-radius:10px; margin-top:12px; background:#fff; }
+  .rep-frame { width:100%; height:780px; border:1px solid var(--line); border-radius:10px; margin-top:0; background:#fff; }
+
+  /* ---- 平台内嵌 ---- */
+  .platform-card { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--bg); margin-bottom:20px; }
+  .pc-link-open {
+    font-size:12px; color:var(--sub); text-decoration:none; padding:5px 10px;
+    border:1px solid var(--line); border-radius:6px; transition:all .15s; white-space:nowrap;
+  }
+  .pc-link-open:hover { color:var(--accent); border-color:var(--accent); background:#f0f4ff; }
+  .platform-hint {
+    text-align:center; font-size:12px; color:var(--accent); font-weight:600;
+    padding:8px 0 6px; letter-spacing:.3px;
+  }
+  .platform-note {
+    text-align:center; font-size:12px; color:#b45309; font-weight:600;
+    padding:14px 0; margin-top:6px; background:#fffbeb;
+    border-top:1px solid var(--line); letter-spacing:.3px;
+  }
+  .platform-frame {
+    width:100%; height:720px; border:none; display:block;
+    border-top:1px solid var(--line);
+  }
+
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<!-- 左侧边栏 -->
+<div class="sidebar">
+  <div class="sb-group-title">舆情监控</div>
+  <div class="sb-item active" id="sbAI" onclick="switchView('ai')">
+    <span class="sb-icon">🤖</span><span>舆情 AI</span>
+  </div>
+  <div class="sb-item" id="sbVideo" onclick="switchView('video')">
+    <span class="sb-icon">🎬</span><span>视频平台</span>
+  </div>
+</div>
+
+<!-- 右侧主区域 -->
+<div class="main">
+
+  <!-- ====== 视图：舆情AI（筛选面板） ====== -->
+  <div class="view-panel" id="viewAI">
+  <div class="wrap">
 
   <div class="panel">
 
@@ -302,11 +427,78 @@
     <!-- 搜索提示词结果区 -->
     <div class="result-box" id="resultBox" style="display:none;"></div>
 
+  </div><!-- /.panel -->
+  </div><!-- /.wrap -->
+  </div><!-- /#viewAI -->
+
+  <!-- ====== 视图：视频平台 ====== -->
+  <div class="view-panel hidden" id="viewVideo">
+    <div class="video-section">
+      <div class="video-header">视频平台</div>
+      <div class="platform-tabs" id="videoTabs">
+        <div class="ptab active" data-platform="douyin" onclick="switchVideoTab(this,'douyin')">抖音</div>
+        <div class="ptab" data-platform="kuaishou" onclick="switchVideoTab(this,'kuaishou')">快手</div>
+        <div class="ptab" data-platform="bilibili" onclick="switchVideoTab(this,'bilibili')">B站</div>
+      </div>
+      <div class="ptab-iframe-wrap">
+        <iframe class="ptab-iframe" id="videoFrame" src="" title="视频平台" style="display:none;" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"></iframe>
+        <div class="video-blocked" id="videoBlocked">
+          <div class="vb-icon">🔒</div>
+          <div class="vb-title">该平台禁止内嵌</div>
+          <div class="vb-desc">由于安全策略限制，<span id="vbPlatformName">抖音</span> 无法在页面中直接展示。</div>
+          <a class="vb-open-btn" id="vbOpenLink" href="https://www.douyin.com/jingxuan" target="_blank" rel="noopener">在新标签打开 ↗</a>
+        </div>
+      </div>
+    </div>
   </div>
 
-</div>
+</div><!-- /.main -->
 
 <script>
+// ====== 视图切换（侧边栏） ======
+function switchView(view){
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.view-panel').forEach(el=>el.classList.add('hidden'));
+  if(view==='ai'){
+    document.getElementById('sbAI').classList.add('active');
+    document.getElementById('viewAI').classList.remove('hidden');
+  } else {
+    document.getElementById('sbVideo').classList.add('active');
+    document.getElementById('viewVideo').classList.remove('hidden');
+  }
+}
+
+// ====== 视频平台标签切换 ======
+const VIDEO_PLATFORMS = {
+  douyin:   { name:'抖音', url:'https://www.douyin.com/jingxuan' },
+  kuaishou: { name:'快手', url:'https://www.kuaishou.com/?isHome=1' },
+  bilibili: { name:'B站', url:'https://www.bilibili.com/' }
+};
+
+function switchVideoTab(tabEl, platform){
+  // 切换标签高亮
+  document.querySelectorAll('#videoTabs .ptab').forEach(el=>el.classList.remove('active'));
+  tabEl.classList.add('active');
+
+  const frame = document.getElementById('videoFrame');
+  const blocked = document.getElementById('videoBlocked');
+  const info = VIDEO_PLATFORMS[platform];
+
+  if(platform === 'douyin'){
+    // 抖音禁止 iframe 内嵌 → 显示提示
+    frame.style.display = 'none';
+    blocked.style.display = 'flex';
+    document.getElementById('vbPlatformName').textContent = info.name;
+    document.getElementById('vbOpenLink').href = info.url;
+  } else {
+    // 其他平台 → 正常内嵌
+    blocked.style.display = 'none';
+    frame.style.display = 'block';
+    frame.src = info.url;
+    frame.title = info.name;
+  }
+}
+
 // ====== 日历数据与状态 ======
 const TODAY = new Date(2026,6,22); // 模拟今天 2026-07-22
 let selStart = new Date(2026,6,15);
@@ -478,7 +670,7 @@ function getRange(){
 
 function buildPrompt(channelName, rangeText, keyword, dim){
   const info=DIM_INFO[dim];
-  return `你好${channelName}，请帮我搜索${rangeText}期间，${keyword}内容的${info.label}，需要客观公正真实的内容，内容选取抖音、快手、B站、各个游戏APP论坛，然后生成html报告并将链接转发给我。`;
+  return `你好${channelName}，请帮我搜索${rangeText}期间，${keyword}内容的${info.label}，需要客观公正真实的内容，内容选取抖音、快手、B站、各个游戏APP论坛，然后生成分析报告，内容需要简单易懂且剔除无关内容。`;
 }
 
 function escapeHtml(s){
@@ -568,6 +760,8 @@ function buildReport(p){
   </body></html>`;
 }
 
+// ====== 轻量模式：打开网页 + 回填链接（不介入、不调后端） ======
+
 function submitQuery(){
   const chips=[...document.querySelectorAll('.chip-area .chip')].map(e=>e.firstChild.textContent.trim());
   const kwInput=document.getElementById('kwInput').value.trim();
@@ -576,36 +770,46 @@ function submitQuery(){
   const keyword=allKw.join('、');
 
   const dim=document.getElementById('dim').value;
-  const dimLabel=DIM_INFO[dim].label;
   const range=getRange();
   const ch=document.querySelector('input[name="ch"]:checked').value;
   const targets = ch==='all' ? Object.keys(CHANNELS) : [ch];
+
+  // 复制首个提示词到剪贴板
+  const firstPrompt=buildPrompt(CHANNELS[targets[0]].name, range.text, keyword, dim);
+  if(navigator.clipboard){ navigator.clipboard.writeText(firstPrompt).catch(()=>{}); }
 
   let cards='';
   targets.forEach(key=>{
     const c=CHANNELS[key];
     const prompt=buildPrompt(c.name, range.text, keyword, dim);
-    const repHtml=buildReport({keyword,rangeText:range.text,dimLabel,dim,channelName:c.name,channelKey:key});
-    const blob=new Blob([repHtml],{type:'text/html'});
-    const url=URL.createObjectURL(blob);
-    const fname='舆情报告_'+keyword+'_'+c.name+'.html';
-    cards+=`<div class="prompt-card">
-      <div class="pc-head"><span class="pc-ch">${c.name} · 已生成 HTML 报告</span><button class="pc-copy" onclick="copyText(this)">复制提示词</button></div>
-      <pre class="pc-body">${escapeHtml(prompt)}</pre>
-      <div class="pc-actions">
-        <a class="pc-link" href="${url}" target="_blank" rel="noopener">查看 HTML 报告 ↗</a>
-        <a class="pc-link" href="${url}" download="${fname}" rel="noopener">下载 HTML 报告 ↓</a>
+    const head=`<div class="pc-head">
+        <span class="pc-ch">${c.name}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a class="pc-link-open" href="${c.url}" target="_blank" rel="noopener">在新标签打开 ↗</a>
+          <button class="pc-copy" onclick="copyText(this)">复制提示词</button>
+        </div>
       </div>
-      <iframe class="rep-frame" src="${url}" title="${c.name} 舆情报告"></iframe>
-    </div>`;
+      <pre class="pc-body">${escapeHtml(prompt)}</pre>`;
+    if(key==='qianwen'){
+      // 千问：不内嵌，仅提示词 + 快捷打开标签 + 暂时无法跳转提示
+      cards+=`<div class="platform-card" id="card_${key}">
+        ${head}
+        <div class="platform-note">⚠ 暂时无法跳转</div>
+      </div>`;
+    } else {
+      // 其他渠道：内嵌平台界面
+      cards+=`<div class="platform-card" id="card_${key}">
+        ${head}
+        <div class="platform-hint">↓ 在下方 ${c.name} 界面中粘贴提示词并发送搜索 ↓</div>
+        <iframe class="platform-frame" src="${c.url}" title="${c.name} 搜索平台" allow="clipboard-read; clipboard-write" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"></iframe>
+      </div>`;
+    }
   });
 
   const box=document.getElementById('resultBox');
-  box.innerHTML=`<div class="result-title">已向 ${targets.length} 个渠道提交搜索指令，HTML 报告已生成并展示如下（回执为 HTML 报告链接）：</div>${cards}`;
+  box.innerHTML=`<div class="result-title">已为 ${targets.length} 个渠道生成提示词并准备搜索入口（提示词已复制到剪贴板，可粘贴到对应平台发送）；标注「暂时无法跳转」的渠道请点上方「在新标签打开」。</div>${cards}`;
   box.style.display='block';
   box.scrollIntoView({behavior:'smooth'});
-
-  alert(`已自动生成 ${targets.length} 份可交互 HTML 报告并展示在当前页面。\n\n监测类型：${dimLabel}\n时间：${range.text}\n关键词：${keyword}\n\n回执链接 = HTML 报告文件（非 AI 搜索框）`);
 }
 
 // 初始渲染
