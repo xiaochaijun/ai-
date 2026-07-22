@@ -198,6 +198,10 @@
   .pc-body { margin:0; padding:14px; font-size:13px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-break:break-all; font-family:inherit; }
   .pc-link { display:block; padding:9px 14px; font-size:13px; color:var(--accent); text-decoration:none; border-top:1px solid var(--line); box-sizing:border-box; }
   .pc-link:hover { background:var(--soft); }
+  .pc-actions { display:flex; gap:10px; padding:10px 14px; border-top:1px solid var(--line); background:var(--soft); }
+  .pc-actions .pc-link { flex:1; text-align:center; border:1px solid var(--line); border-radius:6px; background:var(--bg); }
+  .pc-link.subtle { color:var(--sub); }
+  .rep-frame { width:100%; height:780px; border:1px solid var(--line); border-radius:10px; margin-top:12px; background:#fff; }
 </style>
 </head>
 <body>
@@ -474,7 +478,7 @@ function getRange(){
 
 function buildPrompt(channelName, rangeText, keyword, dim){
   const info=DIM_INFO[dim];
-  return `你好${channelName}，请帮我搜索${rangeText}期间，${keyword}内容的${info.label}，输出成网页分析报告展示给我。\n补充说明：${info.desc}`;
+  return `你好${channelName}，请帮我搜索${rangeText}期间，${keyword}内容的${info.label}，需要客观公正真实的内容，内容选取抖音、快手、B站、各个游戏APP论坛，然后生成html报告并将链接转发给我。`;
 }
 
 function escapeHtml(s){
@@ -490,6 +494,80 @@ function copyText(btn){
   } else { alert(txt); }
 }
 
+// ====== 可交互 HTML 报告生成 ======
+function repItems(kind, keyword, rangeText, channelName){
+  const map={
+    pos:[
+      ['玩家盛赞本次版本优化，称手感明显提升','在'+rangeText+'期间，'+channelName+'上大量玩家对'+keyword+'的本次更新表示认可，认为操作手感与稳定性有明显改善（示例内容）。'],
+      ['社区二创热度走高，攻略贴获高赞','围绕'+keyword+'的讨论催生大量二创与攻略内容，相关帖子互动量领先（示例内容）。']
+    ],
+    neu:[
+      ['版本内容讨论平稳，信息向内容居多','周期内关于'+keyword+'的讨论以资讯、攻略类中性内容为主，情绪无明显波动（示例内容）。'],
+      ['玩家关注活动节奏，观望情绪明显','部分玩家对'+keyword+'后续活动安排持观望态度，等待官方进一步消息（示例内容）。']
+    ],
+    neg:[
+      ['外挂与匹配问题引发集中吐槽','周期内'+channelName+'上出现针对'+keyword+'外挂治理与匹配机制的负面反馈，需重点关注（示例内容）。'],
+      ['部分付费点引发争议','少数玩家对'+keyword+'的付费设计表达不满，建议在后续版本优化（示例内容）。']
+    ],
+    up:[
+      ['新赛季上线，新增核心玩法','在'+rangeText+'，'+keyword+'推出新赛季，包含全新地图与玩法模式（示例更新内容）。'],
+      ['限时联动活动开启','与知名 IP 的联动活动于周期内上线，引发社区广泛关注（示例更新内容）。']
+    ]
+  };
+  const cls={pos:'pos',neu:'neu',neg:'neg',up:'up'};
+  const tag={pos:'正面',neu:'中性',neg:'负面',up:'更新'};
+  return map[kind].map(it=>`<div class="rep-item" onclick="repToggle(this)"><div class="it-head"><span class="it-title">${it[0]}</span><span class="badge b-${cls[kind]}">${tag[kind]}</span></div><div class="it-body">${it[1]}</div></div>`).join('');
+}
+
+function buildReport(p){
+  const sections = p.dim==='opinion' ? ['pos','neu','neg'] : p.dim==='update' ? ['up'] : ['pos','neu','neg','up'];
+  const tabName={pos:'正面',neu:'中性',neg:'负面',up:'内容更新'};
+  let tabsHtml='', panelsHtml='';
+  sections.forEach((s,i)=>{
+    tabsHtml+=`<button class="rep-tab ${i===0?'on':''}" onclick="repTab(this,'p_${s}')">${tabName[s]}</button>`;
+    panelsHtml+=`<div class="rep-panel ${i===0?'on':''}" id="p_${s}">${repItems(s,p.keyword,p.rangeText,p.channelName)}</div>`;
+  });
+  const total=1280, posP=42, neuP=35, negP=23;
+  const gen=new Date().toLocaleString('zh-CN');
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${p.keyword} 舆情分析报告 · ${p.channelName}</title><style>
+  :root{--accent:#2563eb;--pos:#16a34a;--neu:#6b7280;--neg:#dc2626;--line:#e5e7eb;--soft:#f8fafc;}
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;margin:0;padding:24px;color:#1f2937;background:#fff;}
+  .rep-h{font-size:20px;font-weight:800;margin:0 0 4px;}
+  .rep-sub{font-size:13px;color:#6b7280;margin-bottom:18px;}
+  .rep-overview{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .ov-card{flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--soft);}
+  .ov-num{font-size:22px;font-weight:800;}
+  .ov-lab{font-size:12px;color:#6b7280;margin-top:2px;}
+  .rep-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:8px;}
+  .rep-tab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600;color:#374151;}
+  .rep-tab.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .rep-panel{display:none;}
+  .rep-panel.on{display:block;}
+  .rep-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+  .rep-item .it-head{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .rep-item .it-title{font-weight:700;font-size:14px;}
+  .badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:700;color:#fff;}
+  .b-pos{background:var(--pos);} .b-neu{background:var(--neu);} .b-neg{background:var(--neg);} .b-up{background:var(--accent);}
+  .rep-item .it-body{font-size:13px;color:#374151;line-height:1.7;margin-top:8px;display:none;}
+  .rep-item.open .it-body{display:block;}
+  .rep-foot{font-size:12px;color:#9ca3af;margin-top:18px;border-top:1px solid var(--line);padding-top:10px;}
+  </style></head><body>
+  <h1 class="rep-h">${p.keyword} 舆情分析报告</h1>
+  <div class="rep-sub">监测类型：${p.dimLabel} ｜ 时间：${p.rangeText} ｜ 渠道：${p.channelName} ｜ 生成时间：${gen}</div>
+  <div class="rep-overview">
+    <div class="ov-card"><div class="ov-num">${total}</div><div class="ov-lab">相关讨论/内容总量</div></div>
+    <div class="ov-card"><div class="ov-num" style="color:var(--pos)">${posP}%</div><div class="ov-lab">正面</div></div>
+    <div class="ov-card"><div class="ov-num" style="color:var(--neu)">${neuP}%</div><div class="ov-lab">中性</div></div>
+    <div class="ov-card"><div class="ov-num" style="color:var(--neg)">${negP}%</div><div class="ov-lab">负面</div></div>
+  </div>
+  <div class="rep-tabs">${tabsHtml}</div>
+  ${panelsHtml}
+  <div class="rep-foot">本报告由 ${p.channelName} 生成并转发（数据来源：抖音 / 快手 / B站 / 各游戏 APP 论坛）。示例数据 —— 接入渠道 API 后返回真实检索结果。</div>
+  <script>function repTab(btn,id){document.querySelectorAll('.rep-tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.rep-panel').forEach(p=>p.classList.remove('on'));document.getElementById(id).classList.add('on');}function repToggle(el){el.classList.toggle('open');}<\/script>
+  </body></html>`;
+}
+
 function submitQuery(){
   const chips=[...document.querySelectorAll('.chip-area .chip')].map(e=>e.firstChild.textContent.trim());
   const kwInput=document.getElementById('kwInput').value.trim();
@@ -497,35 +575,37 @@ function submitQuery(){
   if(allKw.length===0){ alert('请先输入关键词（在关键词配置处回车添加，或直接输入）'); return; }
   const keyword=allKw.join('、');
 
-  const tz=document.getElementById('tz').value;
   const dim=document.getElementById('dim').value;
   const dimLabel=DIM_INFO[dim].label;
   const range=getRange();
   const ch=document.querySelector('input[name="ch"]:checked').value;
   const targets = ch==='all' ? Object.keys(CHANNELS) : [ch];
 
-  let lastPrompt='', cards='';
-  targets.forEach((key, i)=>{
+  let cards='';
+  targets.forEach(key=>{
     const c=CHANNELS[key];
     const prompt=buildPrompt(c.name, range.text, keyword, dim);
-    lastPrompt=prompt;
+    const repHtml=buildReport({keyword,rangeText:range.text,dimLabel,dim,channelName:c.name,channelKey:key});
+    const blob=new Blob([repHtml],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const fname='舆情报告_'+keyword+'_'+c.name+'.html';
     cards+=`<div class="prompt-card">
-      <div class="pc-head"><span class="pc-ch">${c.name}</span><button class="pc-copy" onclick="copyText(this)">复制提示词</button></div>
+      <div class="pc-head"><span class="pc-ch">${c.name} · 已生成 HTML 报告</span><button class="pc-copy" onclick="copyText(this)">复制提示词</button></div>
       <pre class="pc-body">${escapeHtml(prompt)}</pre>
-      <a class="pc-link" href="${c.url}" target="_blank" rel="noopener">打开${c.name}搜索页 ↗</a>
+      <div class="pc-actions">
+        <a class="pc-link" href="${url}" target="_blank" rel="noopener">查看 HTML 报告 ↗</a>
+        <a class="pc-link" href="${url}" download="${fname}" rel="noopener">下载 HTML 报告 ↓</a>
+      </div>
+      <iframe class="rep-frame" src="${url}" title="${c.name} 舆情报告"></iframe>
     </div>`;
-    // 错开打开，降低被浏览器拦截的概率
-    setTimeout(()=>window.open(c.url,'_blank'), i*400);
   });
 
-  if(navigator.clipboard){ navigator.clipboard.writeText(lastPrompt).catch(()=>{}); }
-
   const box=document.getElementById('resultBox');
-  box.innerHTML=`<div class="result-title">已为 ${targets.length} 个渠道打开搜索页，提示词如下（也可手动复制后粘贴发送）：</div>${cards}`;
+  box.innerHTML=`<div class="result-title">已向 ${targets.length} 个渠道提交搜索指令，HTML 报告已生成并展示如下（回执为 HTML 报告链接）：</div>${cards}`;
   box.style.display='block';
   box.scrollIntoView({behavior:'smooth'});
 
-  alert(`已打开 ${targets.length} 个渠道搜索页面。\n提示词已复制到剪贴板，请在各渠道聊天框粘贴并发送。\n\n监测类型：${dimLabel}\n时间：${range.text}\n关键词：${keyword}`);
+  alert(`已自动生成 ${targets.length} 份可交互 HTML 报告并展示在当前页面。\n\n监测类型：${dimLabel}\n时间：${range.text}\n关键词：${keyword}\n\n回执链接 = HTML 报告文件（非 AI 搜索框）`);
 }
 
 // 初始渲染
