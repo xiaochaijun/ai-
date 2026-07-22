@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>舆情监控 · 筛选面板</title>
+<style>
+  :root {
+    --line:#e3e6ea; --ink:#1f2329; --sub:#8c959e; --accent:#2563eb;
+    --bg:#ffffff; --soft:#f6f7f9; --chip-bg:#eef2ff; --chip-txt:#2563eb;
+    --radio-dot:#2563eb; --cal-hl:#1f2329; --cal-range-bg:#f0f2f5;
+    --cal-today:#ef4444;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink); background:var(--soft); min-height:100vh;
+    line-height:1.55;
+  }
+  .wrap { max-width:1100px; margin:0 auto; padding:32px 24px 60px; }
+
+  /* ---- 面板容器 ---- */
+  .panel {
+    background:var(--bg); border:1px solid var(--line); border-radius:14px;
+    padding:28px 30px 34px;
+  }
+
+  /* ---- 行 ---- */
+  .row { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; margin-bottom:22px; }
+  .row:last-child { margin-bottom:0; }
+
+  /* ---- 标签 ---- */
+  .lbl {
+    font-size:13px; color:var(--ink); font-weight:600; white-space:nowrap;
+    flex:0 0 auto; padding-top:8px; letter-spacing:.2px;
+  }
+
+  /* ---- 时区下拉 ---- */
+  .select-wrap { position:relative; flex:0 0 auto; }
+  select {
+    appearance:none; -webkit-appearance:none;
+    border:1px solid var(--line); border-radius:8px; padding:8px 32px 8px 12px;
+    font-size:14px; color:var(--ink); background:var(--bg);
+    cursor:pointer; outline:none; transition:border-color .15s;
+  }
+  select:hover { border-color:#b0b7bf; }
+  select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+  .select-wrap::after {
+    content:""; position:absolute; right:11px; top:50%; transform:translateY(-35%);
+    width:0; height:0; border-left:4.5px solid transparent;
+    border-right:4.5px solid transparent; border-top:5px solid var(--sub);
+    pointer-events:none;
+  }
+
+  /* ---- 关键词标签区 ---- */
+  .chip-area {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    border:1px solid var(--line); border-radius:8px; padding:7px 10px;
+    min-height:40px; background:var(--bg); flex:1;
+  }
+  .chip {
+    display:inline-flex; align-items:center; gap:5px;
+    background:var(--chip-bg); color:var(--chip-txt); font-size:13px;
+    padding:4px 10px; border-radius:6px; font-weight:500;
+  }
+  .chip .x {
+    cursor:pointer; font-size:15px; line-height:1; opacity:.65;
+    transition:opacity .15s;
+  }
+  .chip .x:hover { opacity:1; }
+  .chip-input {
+    border:none; outline:none; font-size:14px; color:var(--ink);
+    background:transparent; flex:1; min-width:120px; padding:2px 0;
+  }
+  .chip-input::placeholder { color:var(--sub); }
+
+  /* ---- 过滤词输入 ---- */
+  .filter-area {
+    flex:1; display:flex; align-items:center; gap:10px;
+  }
+  .filter-label {
+    font-size:13px; color:var(--ink); font-weight:600; white-space:nowrap; letter-spacing:.2px;
+  }
+  .text-input {
+    flex:1; border:1px solid var(--line); border-radius:8px;
+    padding:8px 12px; font-size:14px; color:var(--ink); outline:none;
+    transition:border-color .15s;
+  }
+  .text-input:hover { border-color:#b0b7bf; }
+  .text-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,.12); }
+  .text-input::placeholder { color:var(--sub); font-size:13px; }
+
+  /* ---- 渠道单选 ---- */
+  .channel-group { display:flex; align-items:center; gap:18px; flex-wrap:wrap; flex:1; }
+  .radio-item { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+  .radio-item input[type="radio"] {
+    appearance:none; -webkit-appearance:none; width:16px; height:16px;
+    border:1.5px solid #c4c9d0; border-radius:50%; cursor:pointer;
+    position:relative; flex-shrink:0; transition:border-color .15s;
+  }
+  .radio-item input[type="radio"]:checked { border-color:var(--radio-dot); }
+  .radio-item input[type="radio"]:checked::after {
+    content:""; position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%); width:8px; height:8px;
+    background:var(--radio-dot); border-radius:50%;
+  }
+  .radio-item span { font-size:14px; color:var(--ink); }
+
+  /* ---- 日期范围选择器 ---- */
+  .date-row { display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap; }
+  .date-picker {
+    display:inline-flex; align-items:center; gap:8px;
+    border:1px solid var(--line); border-radius:8px; padding:7px 12px;
+    background:var(--bg); cursor:pointer; user-select:none;
+    transition:border-color .15s;
+  }
+  .date-picker:hover { border-color:#b0b7bf; }
+  .date-text { font-size:14px; color:var(--ink); white-space:nowrap; }
+  .date-icon { width:17px; height:17px; opacity:.45; }
+
+  /* 日历弹层 */
+  .cal-pop {
+    display:none; position:absolute; z-index:200;
+    background:var(--bg); border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 8px 28px rgba(15,23,42,.12),0 2px 8px rgba(15,23,42,.06);
+    padding:18px 20px 16px; margin-top:8px;
+  }
+  .cal-pop.show { display:block; animation:popIn .18s ease-out; }
+  @keyframes popIn { from{opacity:0;transform:scale(.96) translateY(-6px);} to{opacity:1;transform:scale(1) translateY(0);} }
+
+  .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .cal-arrows { display:flex; align-items:center; gap:10px; }
+  .cal-arrow { width:26px; height:26px; border-radius:6px; border:1px solid var(--line);
+                background:var(--bg); cursor:pointer; display:flex;align-items:center;justify-content:center;
+                transition:background .15s; }
+  .cal-arrow:hover { background:var(--soft); }
+  .cal-arrow svg { width:13px; height:13px; stroke:var(--sub); fill:none; stroke-width:2; }
+  .cal-month-sel {
+    appearance:none; -webkit-appearance:none;
+    border:1px solid var(--line); border-radius:6px; padding:4px 28px 4px 10px;
+    font-size:13px; font-weight:600; color:var(--ink); background:var(--bg);
+    cursor:pointer; outline:none;
+  }
+  .cal-year-sel {
+    appearance:none; -webkit-appearance:none;
+    border:1px solid var(--line); border-radius:6px; padding:4px 28px 4px 10px;
+    font-size:13px; font-weight:600; color:var(--ink); background:var(--bg);
+    cursor:pointer; outline:none; margin-left:6px;
+  }
+  .cal-month-sel::after, .cal-year-sel::after {
+    content:""; position:absolute; right:9px; top:50%; transform:translateY(-50%);
+    width:0; height:0; border-left:4px solid transparent;
+    border-right:4px solid transparent; border-top:4.5px solid var(--sub);
+  }
+
+  .cal-body { display:flex; gap:36px; }
+  .cal-grid { width:220px; }
+  .cal-title { font-size:13px; font-weight:600; color:var(--ink); text-align:center; margin-bottom:10px; }
+  .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:12px; color:var(--sub); margin-bottom:6px; }
+  .cal-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .cal-day {
+    aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--ink); border-radius:8px; cursor:pointer;
+    transition:background .12s; position:relative;
+  }
+  .cal-day:hover { background:var(--soft); }
+  .cal-day.other { color:#c4c9d0; }
+  .cal-day.in-range { background:var(--cal-range-bg); }
+  .cal-day.range-start, .cal-day.range-end { background:var(--cal-hl); color:#fff; font-weight:600; }
+  .cal-day.today::after {
+    content:""; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+    width:4px; height:4px; border-radius:50%; background:var(--cal-today);
+  }
+  .cal-day.selected:not(.range-start):not(.range-end) { background:var(--cal-range-bg); font-weight:600; }
+
+  /* ---- 底部操作栏 ---- */
+  .action-bar {
+    display:flex; align-items:center; justify-content:flex-end; gap:12px;
+    margin-top:24px; padding-top:18px; border-top:1px solid var(--line);
+  }
+  .btn {
+    padding:9px 22px; border-radius:8px; font-size:14px; font-weight:600;
+    cursor:pointer; border:1px solid transparent; transition:all .15s;
+  }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#1d4ed8; }
+  .btn-secondary { background:var(--bg); color:var(--ink); border-color:var(--line); }
+  .btn-secondary:hover { background:var(--soft); }
+
+  /* ---- 搜索提示词结果区 ---- */
+  .result-box { margin-top:22px; display:flex; flex-direction:column; gap:14px; }
+  .result-title { font-size:13px; color:var(--sub); font-weight:600; }
+  .prompt-card { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg); }
+  .pc-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--soft); }
+  .pc-ch { font-size:14px; font-weight:700; color:var(--ink); }
+  .pc-copy { border:1px solid var(--accent); color:var(--accent); background:var(--bg); border-radius:6px; padding:4px 12px; font-size:12px; cursor:pointer; font-weight:600; transition:all .15s; }
+  .pc-copy:hover { background:var(--accent); color:#fff; }
+  .pc-body { margin:0; padding:14px; font-size:13px; line-height:1.7; color:var(--ink); white-space:pre-wrap; word-break:break-all; font-family:inherit; }
+  .pc-link { display:block; padding:9px 14px; font-size:13px; color:var(--accent); text-decoration:none; border-top:1px solid var(--line); box-sizing:border-box; }
+  .pc-link:hover { background:var(--soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="panel">
+
+    <!-- 第1行：时间 + 时间选择标签(自定义时显示) -->
+    <div class="row">
+      <span class="lbl">时间</span>
+      <div class="select-wrap">
+        <select id="tz" onchange="onTimeChange()">
+          <option value="7d" selected>近7日</option>
+          <option value="3d">近3日</option>
+          <option value="15d">近15日</option>
+          <option value="30d">近30日</option>
+          <option value="custom">自定义</option>
+        </select>
+      </div>
+
+      <!-- 时间选择标签：仅"自定义"时显示，位于关键词前 -->
+      <div style="position:relative; display:none;" id="dateWrap">
+        <div class="date-picker" id="dateBtn" onclick="toggleCal()">
+          <svg class="date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span class="date-text" id="dateText">2026-07-15 — 2026-07-21</span>
+        </div>
+
+        <!-- 日历弹层 -->
+        <div class="cal-pop" id="calPop">
+          <div class="cal-header">
+            <div style="display:flex;align-items:center;gap:8px;position:relative;">
+              <select class="cal-month-sel" id="m1"><option selected>7月</option></select>
+              <select class="cal-year-sel" id="y1"><option selected>2026</option></select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;position:relative;">
+              <select class="cal-month-sel" id="m2"><option selected>8月</option></select>
+              <select class="cal-year-sel" id="y2"><option selected>2026</option></select>
+            </div>
+            <div class="cal-arrows">
+              <button class="cal-arrow" onclick="shiftCal(-1)" title="上一月">
+                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <button class="cal-arrow" onclick="shiftCal(1)" title="下一月">
+                <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="cal-body" id="calBody"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 第2行：关键词配置 -->
+    <div class="row">
+      <span class="lbl">关键词配置</span>
+      <div class="chip-area">
+        <span class="chip">pudgin<span class="x" onclick="this.parentElement.remove()">×</span></span>
+        <input class="chip-input" type="text" placeholder="回车添加关键词..." id="kwInput">
+      </div>
+    </div>
+
+    <!-- 第3行：监测类型（类似时间的下拉筛选） -->
+    <div class="row">
+      <span class="lbl">监测类型</span>
+      <div class="select-wrap">
+        <select id="dim">
+          <option value="opinion" selected>游戏舆情和玩家核心讨论</option>
+          <option value="update">游戏近期内容更新</option>
+          <option value="both">舆情+内容更新</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 第4行：过滤词配置 -->
+    <div class="row">
+      <span class="lbl">过滤词配置</span>
+      <input class="text-input" type="text" placeholder="请输入要过滤的词，按Enter键创建一组，可不填" id="filterInput" style="flex:1;">
+    </div>
+
+    <!-- 第5行：渠道 -->
+    <div class="row">
+      <span class="lbl">渠道</span>
+      <div class="channel-group">
+        <label class="radio-item"><input type="radio" name="ch" value="all" checked><span>全部渠道</span></label>
+        <label class="radio-item"><input type="radio" name="ch" value="yuanbao"><span>元宝</span></label>
+        <label class="radio-item"><input type="radio" name="ch" value="doubao"><span>豆包</span></label>
+        <label class="radio-item"><input type="radio" name="ch" value="qianwen"><span>千问</span></label>
+      </div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="resetForm()">重置</button>
+      <button class="btn btn-primary" onclick="submitQuery()">开始查询</button>
+    </div>
+
+    <!-- 搜索提示词结果区 -->
+    <div class="result-box" id="resultBox" style="display:none;"></div>
+
+  </div>
+
+</div>
+
+<script>
+// ====== 日历数据与状态 ======
+const TODAY = new Date(2026,6,22); // 模拟今天 2026-07-22
+let selStart = new Date(2026,6,15);
+let selEnd   = new Date(2026,6,21);
+let calMonth = 6; // July = 6 (0-based)
+let calYear  = 2026;
+
+const WEEKDAYS = ['一','二','三','四','五','六','日'];
+
+function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
+function firstWeekday(y,m){
+  let d = new Date(y,m,1).getDay();
+  return d === 0 ? 6 : d-1; // 周一=0 ... 周日=6
+}
+
+function renderCal(){
+  const body = document.getElementById('calBody');
+  let html = '';
+  for(let offset=0; offset<2; offset++){
+    let m = ((calMonth + offset)%12 + 12)%12;
+    let y = calYear + Math.floor((calMonth + offset)/12);
+    if(m<0){ m+=12; y-=1; }
+    html += buildMonthGrid(y,m,offset);
+  }
+  body.innerHTML = html;
+}
+
+function buildMonthGrid(y,m,idx){
+  const names=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  const dim = daysInMonth(y,m);
+  const fw = firstWeekday(y,m);
+  const prevDim = m===0 ? daysInMonth(y-1,11) : daysInMonth(y,m-1);
+
+  let cells = '';
+  // 上月尾部
+  for(let i=fw-1;i>=0;i--){
+    cells += `<div class="cal-day other">${prevDim-i}</div>`;
+  }
+  // 本月
+  for(let d=1;d<=dim;d++){
+    let cls='cal-day';
+    const dt = new Date(y,m,d);
+    if(dt.toDateString()===TODAY.toDateString()) cls+=' today';
+    if((selStart && dt>=selStart && dt<=selEnd)){
+      if(dt.toDateString()===selStart.toDateString()) cls+=' range-start';
+      else if(selEnd && dt.toDateString()===selEnd.toDateString()) cls+=' range-end';
+      else cls+=' in-range';
+    }
+    cells += `<div class="${cls}" onclick="pickDate(${y},${m},${d})">${d}</div>`;
+  }
+  // 下月头部
+  const total = fw + dim;
+  const remain = total <= 35 ? 35-total : 42-total;
+  for(let i=1;i<=remain;i++) cells += `<div class="cal-day other">${i}</div>`;
+
+  return `<div class="cal-grid">
+    <div class="cal-title">${names[m]}</div>
+    <div class="cal-weekdays">${WEEKDAYS.map(w=>`<div>${w}</div>`).join('')}</div>
+    <div class="cal-days">${cells}</div>
+  </div>`;
+}
+
+function pickDate(y,m,d){
+  const picked = new Date(y,m,d);
+  if(!selStart || (selStart && selEnd)){
+    selStart = picked;
+    selEnd = null;
+  } else {
+    if(picked<selStart){ selEnd=selStart; selStart=picked; }
+    else selEnd = picked;
+  }
+  updateDateText();
+  renderCal();
+}
+
+function updateDateText(){
+  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('dateText').textContent =
+    fmt(selStart)+(selEnd?' — '+fmt(selEnd):'');
+}
+
+function toggleCal(){
+  const p=document.getElementById('calPop');
+  p.classList.toggle('show');
+  if(p.classList.contains('show')) renderCal();
+}
+document.addEventListener('click', e=>{
+  const pop=document.getElementById('calPop'), btn=document.getElementById('dateBtn');
+  if(!pop.contains(e.target)&&!btn.contains(e.target)) pop.classList.remove('show');
+});
+
+function shiftCal(dir){
+  calMonth+=dir;
+  if(calMonth>11){ calMonth-=12; calYear++; }
+  if(calMonth<0){ calMonth+=12; calYear--; }
+  renderCal();
+}
+
+// ====== 关键词回车添加 ======
+document.getElementById('kwInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const v=e.target.value.trim();
+    if(!v) return;
+    const area=e.target.closest('.chip-area');
+    const chip=document.createElement('span');
+    chip.className='chip';
+    chip.innerHTML=`${v}<span class="x">×</span>`;
+    chip.querySelector('.x').onclick=function(){this.parentElement.remove();};
+    area.insertBefore(chip,e.target);
+    e.target.value='';
+  }
+});
+
+// ====== 过滤词回车 ======
+document.getElementById('filterInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){} // 占位：可扩展为多组过滤词
+});
+
+// ====== 时间下拉：选"自定义"才显示时间选择标签 ======
+function onTimeChange(){
+  const v=document.getElementById('tz').value;
+  const wrap=document.getElementById('dateWrap');
+  if(v==='custom'){
+    wrap.style.display='block';
+  } else {
+    wrap.style.display='none';
+    document.getElementById('calPop').classList.remove('show');
+  }
+}
+
+// ====== 按钮 ======
+function resetForm(){
+  document.getElementById('tz').value='7d';
+  document.getElementById('dim').value='opinion';
+  document.getElementById('dateWrap').style.display='none';
+  document.getElementById('calPop').classList.remove('show');
+  document.querySelectorAll('.chip-area .chip').forEach(el=>el.remove());
+  document.getElementById('kwInput').value='';
+  document.getElementById('filterInput').value='';
+  document.querySelector('input[name="ch"][value="all"]').checked=true;
+  selStart=new Date(2026,6,15); selEnd=new Date(2026,6,21);
+  updateDateText();
+  renderCal();
+}
+
+// ====== 渠道与监测类型配置 ======
+const CHANNELS = {
+  yuanbao: { name:'元宝', url:'https://yuanbao.tencent.com/chat/naQivTmsDa' },
+  doubao:  { name:'豆包', url:'https://www.doubao.com/chat/' },
+  qianwen: { name:'千问', url:'https://www.qianwen.com/' }
+};
+const DIM_INFO = {
+  opinion: { label:'游戏舆情和玩家核心讨论', desc:'用户在周期内对游戏看法和讨论内容，以正、中、负进行小结并分析' },
+  update:  { label:'游戏近期内容更新',       desc:'产品在周期内更新的内容和活动，并展示给我' },
+  both:    { label:'舆情+内容更新',          desc:'用户在周期内对游戏看法和讨论内容，以正、中、负舆情讨论还有产品在周期内更新的内容和活动' }
+};
+
+function getRange(){
+  const tz=document.getElementById('tz').value;
+  let s,e;
+  if(tz==='custom'){ s=selStart; e=selEnd; }
+  else {
+    const n={'7d':7,'3d':3,'15d':15,'30d':30}[tz]||7;
+    e=TODAY; s=new Date(TODAY); s.setDate(TODAY.getDate()-(n-1));
+  }
+  const fmt=d=>`${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,'0')}月${String(d.getDate()).padStart(2,'0')}日`;
+  return { start:s, end:e, text:`${fmt(s)}到${fmt(e)}` };
+}
+
+function buildPrompt(channelName, rangeText, keyword, dim){
+  const info=DIM_INFO[dim];
+  return `你好${channelName}，请帮我搜索${rangeText}期间，${keyword}内容的${info.label}，输出成网页分析报告展示给我。\n补充说明：${info.desc}`;
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyText(btn){
+  const txt=btn.parentElement.nextElementSibling.textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>{
+      const o=btn.textContent; btn.textContent='已复制'; setTimeout(()=>btn.textContent=o,1200);
+    }).catch(()=>alert(txt));
+  } else { alert(txt); }
+}
+
+function submitQuery(){
+  const chips=[...document.querySelectorAll('.chip-area .chip')].map(e=>e.firstChild.textContent.trim());
+  const kwInput=document.getElementById('kwInput').value.trim();
+  const allKw=[...chips, kwInput].filter(Boolean);
+  if(allKw.length===0){ alert('请先输入关键词（在关键词配置处回车添加，或直接输入）'); return; }
+  const keyword=allKw.join('、');
+
+  const tz=document.getElementById('tz').value;
+  const dim=document.getElementById('dim').value;
+  const dimLabel=DIM_INFO[dim].label;
+  const range=getRange();
+  const ch=document.querySelector('input[name="ch"]:checked').value;
+  const targets = ch==='all' ? Object.keys(CHANNELS) : [ch];
+
+  let lastPrompt='', cards='';
+  targets.forEach((key, i)=>{
+    const c=CHANNELS[key];
+    const prompt=buildPrompt(c.name, range.text, keyword, dim);
+    lastPrompt=prompt;
+    cards+=`<div class="prompt-card">
+      <div class="pc-head"><span class="pc-ch">${c.name}</span><button class="pc-copy" onclick="copyText(this)">复制提示词</button></div>
+      <pre class="pc-body">${escapeHtml(prompt)}</pre>
+      <a class="pc-link" href="${c.url}" target="_blank" rel="noopener">打开${c.name}搜索页 ↗</a>
+    </div>`;
+    // 错开打开，降低被浏览器拦截的概率
+    setTimeout(()=>window.open(c.url,'_blank'), i*400);
+  });
+
+  if(navigator.clipboard){ navigator.clipboard.writeText(lastPrompt).catch(()=>{}); }
+
+  const box=document.getElementById('resultBox');
+  box.innerHTML=`<div class="result-title">已为 ${targets.length} 个渠道打开搜索页，提示词如下（也可手动复制后粘贴发送）：</div>${cards}`;
+  box.style.display='block';
+  box.scrollIntoView({behavior:'smooth'});
+
+  alert(`已打开 ${targets.length} 个渠道搜索页面。\n提示词已复制到剪贴板，请在各渠道聊天框粘贴并发送。\n\n监测类型：${dimLabel}\n时间：${range.text}\n关键词：${keyword}`);
+}
+
+// 初始渲染
+renderCal();
+</script>
+</body>
+</html>
